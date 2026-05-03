@@ -21,6 +21,17 @@ function sanitizeSummary(value: string): string {
   return value.replace(/\s+/g, " ").trim().slice(0, 280);
 }
 
+function applyUnpaidX402Headers(config: AppConfig, reply: { header: (name: string, value: string) => void }): void {
+  reply.header("payment-required", "x402");
+  reply.header("www-authenticate", `x402 realm="${config.serviceName}", units="1", rail="x402"`);
+  reply.header("x402-payment-rail", "x402");
+  reply.header("x402-required", "true");
+  reply.header("x402-pricing-units", "1");
+  reply.header("x402-supported-networks", config.x402Network);
+  reply.header("x402-accepted-assets", config.x402AssetSymbol);
+  reply.header("x402-discovery", `${config.publicBaseUrl}/.well-known/infopunks-cognition-layer.json`);
+}
+
 export async function registerPaidToolRoute({
   app,
   config,
@@ -57,7 +68,7 @@ export async function registerPaidToolRoute({
     }, tool);
 
     if (!payment) {
-      reply.header("payment-required", "x402");
+      applyUnpaidX402Headers(config, reply);
       return reply.status(402).send(buildPaymentChallenge(config, tool));
     }
 

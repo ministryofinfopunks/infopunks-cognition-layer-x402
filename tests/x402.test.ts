@@ -49,18 +49,52 @@ test("registry lookups work by id and route", () => {
 test("unpaid requests receive x402 challenge", async () => {
   const { app, runtimeDir } = await createTestServer();
   try {
-    const response = await app.inject({
-      method: "POST",
-      url: "/v1/coherence-score",
-      payload: {
-        artifact: "Publish the x402-paid coherence endpoint and keep receipts attached to every paid result."
+    const unpaidCases: Array<{ route: string; payload: Record<string, unknown> }> = [
+      {
+        route: "/v1/coherence-score",
+        payload: {
+          artifact: "Publish the x402-paid coherence endpoint and keep receipts attached to every paid result."
+        }
+      },
+      {
+        route: "/v1/extract-signal",
+        payload: {
+          input: "agent-native paid routing needs public x402 discovery metadata",
+          output_type: "briefing"
+        }
+      },
+      {
+        route: "/v1/simulate-narrative",
+        payload: {
+          narrative: "x402 paid cognition primitives become easier to route once receipts and proof are discoverable."
+        }
       }
-    });
-    assert.equal(response.statusCode, 402);
-    const body = response.json();
-    assert.equal(body.error, "payment_required");
-    assert.equal(body.payment.price_usd, "0.01");
-    assert.equal(body.payment.resource, "/v1/coherence-score");
+    ];
+
+    for (const unpaidCase of unpaidCases) {
+      const response = await app.inject({
+        method: "POST",
+        url: unpaidCase.route,
+        payload: unpaidCase.payload
+      });
+      const headers = response.headers as Record<string, string | undefined>;
+      assert.equal(response.statusCode, 402);
+      const body = response.json();
+      assert.equal(body.error, "payment_required");
+      assert.equal(body.payment.price_usd, "0.01");
+      assert.equal(body.payment.resource, unpaidCase.route);
+      assert.equal(headers["payment-required"], "x402");
+      assert.equal(headers["www-authenticate"], 'x402 realm="infopunks-cognition-layer", units="1", rail="x402"');
+      assert.equal(headers["x402-payment-rail"], "x402");
+      assert.equal(headers["x402-required"], "true");
+      assert.equal(headers["x402-pricing-units"], "1");
+      assert.equal(headers["x402-supported-networks"], "eip155:8453");
+      assert.equal(headers["x402-accepted-assets"], "USDC");
+      assert.equal(
+        headers["x402-discovery"],
+        "http://127.0.0.1:4024/.well-known/infopunks-cognition-layer.json"
+      );
+    }
   } finally {
     await app.close();
     await rm(runtimeDir, { recursive: true, force: true });
