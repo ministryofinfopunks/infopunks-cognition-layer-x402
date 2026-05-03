@@ -1,0 +1,65 @@
+export type PaymentVerifierMode = "mock" | "facilitator";
+export type PaymentStatus = "verified" | "unpaid" | "mock_verified";
+
+export interface PaymentChallenge {
+  error: "payment_required";
+  message: string;
+  payment: {
+    version: "x402";
+    mode: PaymentVerifierMode;
+    scheme: "exact";
+    network: string;
+    asset_symbol: string;
+    asset_address: string;
+    price_usd: string;
+    price_atomic: string;
+    pay_to: string;
+    required_header: string;
+    facilitator_url: string | null;
+    resource: string;
+    method: string;
+  };
+}
+
+export interface PaymentVerificationResult {
+  verified: true;
+  mode: PaymentVerifierMode;
+  payer: string;
+  reference: string;
+  verifiedAt: string;
+  verifier: string;
+}
+
+export interface PublicReceipt {
+  receipt_id: string;
+  tool_id: string;
+  endpoint: string;
+  final_status: number;
+  x402_verified: boolean;
+  facilitator_provider: string;
+  network: string;
+  asset: string;
+  payTo: string;
+  result_hash: string;
+  created_at: string;
+  proof_url: string;
+}
+
+export interface ReceiptRecord {
+  receipt: PublicReceipt;
+  payment_status: Exclude<PaymentStatus, "unpaid">;
+  result_summary: string;
+}
+
+export interface PublicEvent {
+  event_id: string;
+  event_type: string;
+  tool_id: string;
+  endpoint: string;
+  payment_status: PaymentStatus;
+  x402_verified: boolean;
+  network: string;
+  receipt_id: string;
+  result_summary: string;
+  created_at: string;
+}

@@ -1,0 +1,724 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Infopunks Cognition Layer",
+    "version": "0.1.0",
+    "description": "Infopunks Cognition Layer is an x402-paid cultural intelligence API for agents and humans. It turns raw narrative, market noise, and agent output into coherent machine-usable intelligence. Core primitives: /v1/coherence-score, /v1/extract-signal, /v1/simulate-narrative."
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:4024"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service is healthy."
+          }
+        }
+      }
+    },
+    "/war-room/recent": {
+      "get": {
+        "summary": "Recent paid execution events",
+        "responses": {
+          "200": {
+            "description": "Recent event feed."
+          }
+        }
+      }
+    },
+    "/v1/coherence-score": {
+      "post": {
+        "summary": "Measure whether an artifact is coherent enough to trust or route",
+        "description": "Deterministically scores whether an artifact is internally coherent, technically credible, thesis-aligned, specific, actionable, and suitable for agent or founder use.",
+        "tags": [
+          "cognition",
+          "coherence"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "artifact"
+                ],
+                "properties": {
+                  "artifact": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "context": {
+                    "type": "string"
+                  },
+                  "criteria": {
+                    "type": "array",
+                    "maxItems": 12,
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "audience": {
+                    "type": "string"
+                  },
+                  "intended_action": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "artifact": "POST /v1/coherence-score as an x402-paid endpoint on Base. Every paid call returns a receipt, emits a war-room event, and preserves a proof page. Publish the OpenAPI contract, keep X402_VERIFIER_MODE=facilitator in production, and run typecheck, tests, and build before rollout because agents need stable routing and auditable payment evidence.",
+                "context": "Audience is agent builders deciding whether to trust, route, or amplify the endpoint.",
+                "criteria": [
+                  "technical credibility",
+                  "thesis alignment",
+                  "actionability"
+                ],
+                "audience": "agents and founders",
+                "intended_action": "publish and route the endpoint"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful paid tool response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "coherence_score",
+                    "intelligence_density",
+                    "clarity",
+                    "internal_consistency",
+                    "specificity",
+                    "causal_logic",
+                    "actionability",
+                    "thesis_alignment",
+                    "technical_credibility",
+                    "narrative_strength",
+                    "market_relevance",
+                    "narrative_drift",
+                    "contradiction_risk",
+                    "overclaiming_risk",
+                    "missing_proof",
+                    "contradictions",
+                    "weak_points",
+                    "risk_notes",
+                    "recommended_revision",
+                    "infopunks_angle",
+                    "decision"
+                  ],
+                  "properties": {
+                    "coherence_score": {
+                      "type": "number"
+                    },
+                    "intelligence_density": {
+                      "type": "number"
+                    },
+                    "clarity": {
+                      "type": "number"
+                    },
+                    "internal_consistency": {
+                      "type": "number"
+                    },
+                    "specificity": {
+                      "type": "number"
+                    },
+                    "causal_logic": {
+                      "type": "number"
+                    },
+                    "actionability": {
+                      "type": "number"
+                    },
+                    "thesis_alignment": {
+                      "type": "number"
+                    },
+                    "technical_credibility": {
+                      "type": "number"
+                    },
+                    "narrative_strength": {
+                      "type": "number"
+                    },
+                    "market_relevance": {
+                      "type": "number"
+                    },
+                    "narrative_drift": {
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ]
+                    },
+                    "contradiction_risk": {
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ]
+                    },
+                    "overclaiming_risk": {
+                      "type": "string",
+                      "enum": [
+                        "low",
+                        "medium",
+                        "high"
+                      ]
+                    },
+                    "missing_proof": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "contradictions": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "weak_points": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "risk_notes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "recommended_revision": {
+                      "type": "string"
+                    },
+                    "infopunks_angle": {
+                      "type": "string"
+                    },
+                    "decision": {
+                      "type": "string",
+                      "enum": [
+                        "publishable",
+                        "revise",
+                        "high_risk"
+                      ]
+                    }
+                  }
+                },
+                "example": {
+                  "coherence_score": 88,
+                  "intelligence_density": 87,
+                  "clarity": 84,
+                  "internal_consistency": 92,
+                  "specificity": 90,
+                  "causal_logic": 82,
+                  "actionability": 86,
+                  "thesis_alignment": 93,
+                  "technical_credibility": 91,
+                  "narrative_strength": 78,
+                  "market_relevance": 85,
+                  "narrative_drift": "low",
+                  "contradiction_risk": "low",
+                  "overclaiming_risk": "low",
+                  "missing_proof": [],
+                  "contradictions": [],
+                  "weak_points": [],
+                  "risk_notes": [],
+                  "recommended_revision": "Keep the proof-backed language, then lead with the paid endpoint, receipt surface, and exact rollout action in the opening line.",
+                  "infopunks_angle": "Make the payment primitive explicit: name the x402 path, pricing surface, and receipt flow so paid usage is machine-actionable.",
+                  "decision": "publishable",
+                  "receipt": {
+                    "id": "rcpt_example",
+                    "payment": {
+                      "verified": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "402": {
+            "description": "Payment required"
+          }
+        }
+      }
+    },
+    "/v1/extract-signal": {
+      "post": {
+        "summary": "Turn noise into usable cultural signal",
+        "description": "Turns noisy inputs into coherent cultural signal and usable artifacts for founders, agents, and markets.",
+        "tags": [
+          "cognition",
+          "signal"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "input",
+                  "output_type"
+                ],
+                "properties": {
+                  "input": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 24,
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    ]
+                  },
+                  "context": {
+                    "type": "string"
+                  },
+                  "output_type": {
+                    "type": "string",
+                    "enum": [
+                      "founder_post",
+                      "thesis",
+                      "risk_signal",
+                      "meme_angle",
+                      "briefing",
+                      "launch_copy"
+                    ]
+                  },
+                  "tone": {
+                    "type": "string",
+                    "enum": [
+                      "infopunks",
+                      "neutral",
+                      "founder",
+                      "technical",
+                      "market"
+                    ]
+                  },
+                  "audience": {
+                    "type": "string"
+                  }
+                }
+              },
+              "example": {
+                "input": "x402 tools are starting to get indexed on Agentic.Market",
+                "context": "crypto / agent economy / Base",
+                "output_type": "founder_post",
+                "tone": "infopunks",
+                "audience": "agent builders"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful paid tool response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "core_signal",
+                    "noise_removed",
+                    "recommended_artifact",
+                    "artifact",
+                    "amplified_artifact",
+                    "distribution_angle",
+                    "recommended_use",
+                    "coherence_score",
+                    "risk_notes",
+                    "detected_themes"
+                  ],
+                  "properties": {
+                    "core_signal": {
+                      "type": "string"
+                    },
+                    "noise_removed": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "recommended_artifact": {
+                      "type": "string",
+                      "enum": [
+                        "founder_post",
+                        "thesis",
+                        "risk_signal",
+                        "meme_angle",
+                        "briefing",
+                        "launch_copy"
+                      ]
+                    },
+                    "artifact": {
+                      "type": "string"
+                    },
+                    "amplified_artifact": {
+                      "type": "string"
+                    },
+                    "distribution_angle": {
+                      "type": "string"
+                    },
+                    "recommended_use": {
+                      "type": "string"
+                    },
+                    "coherence_score": {
+                      "type": "number"
+                    },
+                    "risk_notes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "detected_themes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "x402",
+                          "agent payments",
+                          "Base",
+                          "Bazaar",
+                          "Agentic.Market",
+                          "trust",
+                          "coherence",
+                          "signal",
+                          "narrative",
+                          "proof",
+                          "receipts",
+                          "War Room",
+                          "token launch",
+                          "privacy",
+                          "Zcash",
+                          "Solana",
+                          "AI agents",
+                          "marketplaces",
+                          "routing"
+                        ]
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "core_signal": "agent payments are moving from demo primitive to live distribution layer",
+                  "noise_removed": [
+                    "unsupported adoption claims",
+                    "generic AI hype"
+                  ],
+                  "recommended_artifact": "founder_post",
+                  "artifact": "agents do not need subscriptions. they need paid doors. x402 is becoming a distribution surface.",
+                  "amplified_artifact": "agents do not need subscriptions. they need paid doors. agent payments are moving from demo primitive to live distribution layer. receipts make the claim legible enough for the agent economy to route it.",
+                  "distribution_angle": "X post with a paid-call receipt or War Room screenshot.",
+                  "recommended_use": "Use as an X post after proving the endpoint is callable and attaching proof.",
+                  "coherence_score": 84,
+                  "risk_notes": [
+                    "Adoption or listing claims need proof such as receipt volume, listing metadata, or named integrations."
+                  ],
+                  "detected_themes": [
+                    "x402",
+                    "Agentic.Market",
+                    "Base",
+                    "AI agents",
+                    "routing"
+                  ],
+                  "receipt": {
+                    "id": "rcpt_example",
+                    "payment": {
+                      "verified": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "402": {
+            "description": "Payment required"
+          }
+        }
+      }
+    },
+    "/v1/simulate-narrative": {
+      "post": {
+        "summary": "Model how a narrative may evolve",
+        "description": "Simulates plausible future paths for a narrative, protocol, market thesis, launch, or cultural event.",
+        "tags": [
+          "cognition",
+          "narrative"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "narrative"
+                ],
+                "properties": {
+                  "narrative": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 6000
+                  },
+                  "time_horizon": {
+                    "type": "string",
+                    "pattern": "^\\d{1,3}(d|w|m|q|y)$",
+                    "default": "30d"
+                  },
+                  "market_context": {
+                    "type": "string",
+                    "maxLength": 1600
+                  },
+                  "perspective": {
+                    "type": "string",
+                    "maxLength": 160
+                  },
+                  "risk_tolerance": {
+                    "type": "string",
+                    "enum": [
+                      "low",
+                      "medium",
+                      "high"
+                    ],
+                    "default": "medium"
+                  }
+                }
+              },
+              "example": {
+                "narrative": "Launch /v1/simulate-narrative as an x402-paid endpoint on Base for agents, with receipts, War Room proof, and Bazaar metadata so builders can test narratives before routing them.",
+                "time_horizon": "45d",
+                "market_context": "Agentic marketplaces are indexing paid tools and builders want deterministic primitives with proof.",
+                "perspective": "builder distribution",
+                "risk_tolerance": "medium"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful paid tool response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "paths",
+                    "highest_probability_path",
+                    "recommended_action",
+                    "infopunks_angle",
+                    "watch_signals",
+                    "risk_notes"
+                  ],
+                  "properties": {
+                    "paths": {
+                      "type": "array",
+                      "minItems": 3,
+                      "maxItems": 5,
+                      "items": {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "required": [
+                          "name",
+                          "probability",
+                          "description",
+                          "drivers",
+                          "risks",
+                          "opportunity",
+                          "recommended_positioning"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "probability": {
+                            "type": "number"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "drivers": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "risks": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "opportunity": {
+                            "type": "string"
+                          },
+                          "recommended_positioning": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "highest_probability_path": {
+                      "type": "string"
+                    },
+                    "recommended_action": {
+                      "type": "string"
+                    },
+                    "infopunks_angle": {
+                      "type": "string"
+                    },
+                    "watch_signals": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "risk_notes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "paths": [
+                    {
+                      "name": "Infrastructure Pull",
+                      "probability": 0.35,
+                      "description": "Over 45d, the narrative compounds because x402 payments, Base settlement, and agent-callable endpoints make the behavior operationally easier to repeat.",
+                      "drivers": [
+                        "x402 paid routing",
+                        "agent-callable endpoints",
+                        "Base settlement",
+                        "repeatable API behavior"
+                      ],
+                      "risks": [
+                        "proof must stay visible",
+                        "marketplace metadata can drift",
+                        "trust breaks if settlement complaints rise"
+                      ],
+                      "opportunity": "Package the narrative as a stable paid primitive that agents can call, verify, and route without reinterpretation.",
+                      "recommended_positioning": "Lead with the endpoint, price, receipt flow, and one canonical explanation of why agents benefit."
+                    },
+                    {
+                      "name": "Viral Proof Moment",
+                      "probability": 0.31,
+                      "description": "A receipt, screenshot, or War Room artifact makes the story socially legible enough to spread beyond the initial builder audience.",
+                      "drivers": [
+                        "public proof artifacts",
+                        "shareable paid-call receipts",
+                        "launch attention",
+                        "visible usage evidence"
+                      ],
+                      "risks": [
+                        "proof can go stale quickly",
+                        "attention outruns integration depth",
+                        "screenshots invite copycats without context"
+                      ],
+                      "opportunity": "Turn one high-signal paid call into a proof object that compresses understanding for both humans and agents.",
+                      "recommended_positioning": "Ship proof cards and War Room screenshots that show the paid call, output, and why it matters."
+                    },
+                    {
+                      "name": "Developer Adoption",
+                      "probability": 0.2,
+                      "description": "Builder uptake grows when the narrative collapses into copy-pasteable docs, examples, and integration references.",
+                      "drivers": [
+                        "OpenAPI clarity",
+                        "curl examples",
+                        "GitHub references",
+                        "low integration friction"
+                      ],
+                      "risks": [
+                        "docs drift from runtime behavior",
+                        "SDK gaps slow follow-through",
+                        "proof is weaker without real integrations"
+                      ],
+                      "opportunity": "Convert narrative curiosity into implementation throughput with examples that are trivial to test.",
+                      "recommended_positioning": "Treat the story as a developer primitive first: docs, examples, exact request body, and stable receipts."
+                    },
+                    {
+                      "name": "Trust Bottleneck",
+                      "probability": 0.14,
+                      "description": "Adoption remains gated by whether buyers and agents trust the claim surface, verification flow, and settlement behavior.",
+                      "drivers": [
+                        "trust-sensitive routing",
+                        "payment verification",
+                        "reputation effects"
+                      ],
+                      "risks": [
+                        "claims outrun verification",
+                        "failed settlement complaints",
+                        "buyers hesitate without reputation signals"
+                      ],
+                      "opportunity": "Use trust artifacts to make adoption safer before asking the market for amplification.",
+                      "recommended_positioning": "Keep the narrative conservative and route the highest-stakes claims through the Trust Layer."
+                    }
+                  ],
+                  "highest_probability_path": "Infrastructure Pull",
+                  "recommended_action": "Ship the endpoint, publish docs, and show a paid receipt.",
+                  "infopunks_angle": "The narrative wins when it becomes a machine-usable primitive: stable endpoint, canonical metadata, paid receipts, and proof that agents can route without reinterpretation.",
+                  "watch_signals": [
+                    "marketplace indexing",
+                    "paid call receipts",
+                    "developer integrations",
+                    "repeated language on X",
+                    "forks/copycats",
+                    "failed settlement complaints",
+                    "confusion about metadata",
+                    "growth of agent-callable endpoints"
+                  ],
+                  "risk_notes": [
+                    "Proof-sensitive paths rise when receipts, screenshots, or War Room evidence stay fresh and legible.",
+                    "Narratives that rely on infra claims still fail if marketplace metadata and settlement behavior drift apart.",
+                    "Deterministic outputs make the story stronger only if the proof surface remains public and machine-usable."
+                  ],
+                  "receipt": {
+                    "id": "rcpt_example",
+                    "payment": {
+                      "verified": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "402": {
+            "description": "Payment required"
+          }
+        }
+      }
+    }
+  }
+}
