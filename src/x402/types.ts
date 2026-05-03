@@ -15,6 +15,10 @@ export interface PaymentChallenge {
     maxTimeoutSeconds: 300;
     asset: string;
     amount: string;
+    extra?: {
+      name: string;
+      version: string;
+    };
   }>;
   error: "X-PAYMENT header is required";
   message?: string;

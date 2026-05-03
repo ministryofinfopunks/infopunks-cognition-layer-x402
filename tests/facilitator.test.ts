@@ -31,10 +31,14 @@ function samplePaymentPayloadBase64(): string {
     x402Version: 2,
     accepted: {
       scheme: "exact",
-      network: "eip155:8453",
+      network: "base",
       asset: "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913",
       amount: "10000",
-      payTo: "0x1111111111111111111111111111111111111111"
+      payTo: "0x1111111111111111111111111111111111111111",
+      extra: {
+        name: "USD Coin",
+        version: "2"
+      }
     },
     payload: {
       signature: "0xdeadbeef",
@@ -125,7 +129,9 @@ test("facilitator mode calls verify then settle and returns settled receipt", as
     assert.match(calls[1]?.url ?? "", /\/settle$/);
 
     const verifyBody = calls[0]?.body ?? {};
+    const settleBody = calls[1]?.body ?? {};
     const paymentRequirements = (verifyBody.paymentRequirements ?? {}) as Record<string, unknown>;
+    const settlePaymentRequirements = (settleBody.paymentRequirements ?? {}) as Record<string, unknown>;
     assert.equal(paymentRequirements.scheme, "exact");
     assert.equal(paymentRequirements.network, "base");
     assert.equal(paymentRequirements.asset, "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913");
@@ -134,6 +140,8 @@ test("facilitator mode calls verify then settle and returns settled receipt", as
     assert.equal(paymentRequirements.maxAmountRequired, "10000");
     assert.equal(paymentRequirements.resource, "http://127.0.0.1:4024/v1/coherence-score");
     assert.equal(paymentRequirements.mimeType, "application/json");
+    assert.deepEqual(paymentRequirements.extra, { name: "USD Coin", version: "2" });
+    assert.deepEqual(settlePaymentRequirements.extra, { name: "USD Coin", version: "2" });
   } finally {
     globalThis.fetch = originalFetch;
     await app.close();

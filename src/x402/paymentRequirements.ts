@@ -12,7 +12,13 @@ export interface X402PaymentRequirement {
   maxTimeoutSeconds: 300;
   asset: string;
   amount: string;
+  extra?: {
+    name: string;
+    version: string;
+  };
 }
+
+const BASE_MAINNET_USDC = "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913";
 
 function normalizeRequestPath(requestPath: string): string {
   const pathWithoutQuery = requestPath.split("?")[0] ?? requestPath;
@@ -36,10 +42,14 @@ export function buildX402PaymentRequirement(
   requestPath: string
 ): X402PaymentRequirement {
   const price = tool.getPrice(config);
+  const x402Network = toX402NetworkName(config.x402Network);
   const resource = `${config.publicBaseUrl}${normalizeRequestPath(requestPath)}`;
+  const isBaseUsdc =
+    x402Network === "base"
+    && config.x402PaymentAssetAddress.toLowerCase() === BASE_MAINNET_USDC.toLowerCase();
   return {
     scheme: "exact",
-    network: toX402NetworkName(config.x402Network),
+    network: x402Network,
     maxAmountRequired: price.priceAtomic,
     resource,
     description: tool.discovery_description,
@@ -48,6 +58,14 @@ export function buildX402PaymentRequirement(
     maxTimeoutSeconds: 300,
     asset: config.x402PaymentAssetAddress,
     // CDP verify/settle expects amount in paymentRequirements.
-    amount: price.priceAtomic
+    amount: price.priceAtomic,
+    ...(isBaseUsdc
+      ? {
+        extra: {
+          name: config.x402Eip712Name,
+          version: config.x402Eip712Version
+        }
+      }
+      : {})
   };
 }

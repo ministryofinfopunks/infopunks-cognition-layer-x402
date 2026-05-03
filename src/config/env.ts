@@ -29,6 +29,8 @@ export interface AppConfig {
   x402PaymentAssetAddress: string;
   x402PayTo: string;
   x402Scheme: "exact";
+  x402Eip712Name: string;
+  x402Eip712Version: string;
   cdpApiKeyId: string | null;
   cdpApiKeySecret: string | null;
   receiptHmacSecret: string | null;
@@ -160,6 +162,8 @@ export function loadEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
     x402PaymentAssetAddress: String(env.X402_PAYMENT_ASSET_ADDRESS ?? BASE_MAINNET_USDC).trim(),
     x402PayTo: String(env.X402_PAY_TO ?? DEV_PAY_TO).trim(),
     x402Scheme: "exact",
+    x402Eip712Name: String(env.X402_EIP712_NAME ?? "USD Coin").trim(),
+    x402Eip712Version: String(env.X402_EIP712_VERSION ?? "2").trim(),
     cdpApiKeyId: isNonEmptyString(env.CDP_API_KEY_ID) ? env.CDP_API_KEY_ID.trim() : null,
     cdpApiKeySecret: isNonEmptyString(env.CDP_API_KEY_SECRET) ? env.CDP_API_KEY_SECRET.trim() : null,
     receiptHmacSecret: isNonEmptyString(env.RECEIPT_HMAC_SECRET) ? env.RECEIPT_HMAC_SECRET.trim() : null
@@ -180,6 +184,12 @@ export function loadEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
     }
     if (!isNonEmptyString(config.cdpApiKeySecret)) {
       throw new Error("CDP_API_KEY_SECRET is required when X402_FACILITATOR_PROVIDER=cdp.");
+    }
+    if (!isNonEmptyString(config.x402Eip712Name)) {
+      throw new Error("X402_EIP712_NAME is required when X402_FACILITATOR_PROVIDER=cdp.");
+    }
+    if (!isNonEmptyString(config.x402Eip712Version)) {
+      throw new Error("X402_EIP712_VERSION is required when X402_FACILITATOR_PROVIDER=cdp.");
     }
   }
   if (environment === "production" || nodeEnv === "production") {

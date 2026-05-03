@@ -90,6 +90,8 @@ test("unpaid requests receive x402 challenge", async () => {
       assert.equal(body.accepts[0].resource, `http://127.0.0.1:4024${unpaidCase.route}`);
       assert.equal(body.accepts[0].payTo, "0x1111111111111111111111111111111111111111");
       assert.equal(body.accepts[0].asset, "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913");
+      assert.equal(body.accepts[0].extra.name, "USD Coin");
+      assert.equal(body.accepts[0].extra.version, "2");
       assert.equal(headers["payment-required"], undefined);
       assert.equal(headers["x402-payment-required"], "true");
       assert.equal(headers["www-authenticate"], 'x402 realm="infopunks-cognition-layer", units="1", rail="x402"');
