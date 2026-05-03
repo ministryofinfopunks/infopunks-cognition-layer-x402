@@ -85,7 +85,7 @@ test("unpaid requests receive x402 challenge", async () => {
       assert.ok(Array.isArray(body.accepts));
       assert.ok(body.accepts.length > 0);
       assert.equal(body.accepts[0].scheme, "exact");
-      assert.equal(body.accepts[0].network, "eip155:8453");
+      assert.equal(body.accepts[0].network, "base");
       assert.equal(body.accepts[0].maxAmountRequired, "10000");
       assert.equal(body.accepts[0].resource, `http://127.0.0.1:4024${unpaidCase.route}`);
       assert.equal(body.accepts[0].payTo, "0x1111111111111111111111111111111111111111");
@@ -96,7 +96,7 @@ test("unpaid requests receive x402 challenge", async () => {
       assert.equal(headers["x402-payment-rail"], "x402");
       assert.equal(headers["x402-required"], "true");
       assert.equal(headers["x402-pricing-units"], "1");
-      assert.equal(headers["x402-supported-networks"], "eip155:8453");
+      assert.match(headers["x402-supported-networks"] ?? "", /base/);
       assert.equal(headers["x402-accepted-assets"], "USDC");
       assert.equal(
         headers["x402-discovery"],

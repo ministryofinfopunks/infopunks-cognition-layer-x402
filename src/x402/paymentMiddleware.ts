@@ -6,6 +6,7 @@ import { createSanitizedResultHash } from "../receipts/receiptHash.js";
 import type { ReceiptRepository } from "../receipts/receiptStore.js";
 import type { PaidToolRegistration } from "../registry/tools.js";
 import { buildPaymentChallenge } from "./challenge.js";
+import { toX402NetworkName } from "./paymentRequirements.js";
 import { PaymentVerifier } from "./verify.js";
 
 interface RegisterPaidToolRouteOptions {
@@ -27,7 +28,7 @@ function applyUnpaidX402Headers(config: AppConfig, reply: { header: (name: strin
   reply.header("x402-payment-rail", "x402");
   reply.header("x402-required", "true");
   reply.header("x402-pricing-units", "1");
-  reply.header("x402-supported-networks", config.x402Network);
+  reply.header("x402-supported-networks", toX402NetworkName(config.x402Network));
   reply.header("x402-accepted-assets", config.x402AssetSymbol);
   reply.header("x402-discovery", `${config.publicBaseUrl}/.well-known/infopunks-cognition-layer.json`);
 }

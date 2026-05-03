@@ -127,7 +127,7 @@ test("facilitator mode calls verify then settle and returns settled receipt", as
     const verifyBody = calls[0]?.body ?? {};
     const paymentRequirements = (verifyBody.paymentRequirements ?? {}) as Record<string, unknown>;
     assert.equal(paymentRequirements.scheme, "exact");
-    assert.equal(paymentRequirements.network, "eip155:8453");
+    assert.equal(paymentRequirements.network, "base");
     assert.equal(paymentRequirements.asset, "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913");
     assert.equal(paymentRequirements.payTo, "0x1111111111111111111111111111111111111111");
     assert.equal(paymentRequirements.amount, "10000");

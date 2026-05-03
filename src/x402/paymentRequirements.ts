@@ -22,6 +22,14 @@ function normalizeRequestPath(requestPath: string): string {
   return `/${pathWithoutQuery}`;
 }
 
+export function toX402NetworkName(network: string): string {
+  const normalized = String(network).trim().toLowerCase();
+  if (normalized === "eip155:8453" || normalized === "base") {
+    return "base";
+  }
+  return normalized;
+}
+
 export function buildX402PaymentRequirement(
   config: AppConfig,
   tool: PaidToolRegistration,
@@ -31,7 +39,7 @@ export function buildX402PaymentRequirement(
   const resource = `${config.publicBaseUrl}${normalizeRequestPath(requestPath)}`;
   return {
     scheme: "exact",
-    network: config.x402Network,
+    network: toX402NetworkName(config.x402Network),
     maxAmountRequired: price.priceAtomic,
     resource,
     description: tool.discovery_description,
