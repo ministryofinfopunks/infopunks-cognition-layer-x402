@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { createCdpAuthHeaders } from "@coinbase/x402";
 import type { AppConfig } from "../config/env.js";
 import type { PaidToolRegistration } from "../registry/tools.js";
+import { buildX402PaymentRequirement } from "./paymentRequirements.js";
 import type { PaymentVerificationResult } from "./types.js";
 
 export interface PaymentVerificationRequest {
@@ -164,21 +165,6 @@ export class PaymentVerifier {
     }
   }
 
-  private buildPaymentRequirements(request: PaymentVerificationRequest, tool: PaidToolRegistration): Record<string, unknown> {
-    const price = tool.getPrice(this.config);
-    return {
-      scheme: "exact",
-      network: this.config.x402Network,
-      asset: this.config.x402PaymentAssetAddress,
-      payTo: this.config.x402PayTo,
-      amount: price.priceAtomic,
-      maxAmountRequired: price.priceAtomic,
-      resource: `${this.config.publicBaseUrl}${request.path}`,
-      description: tool.public_description,
-      mimeType: "application/json"
-    };
-  }
-
   private async verifyFacilitator(
     request: PaymentVerificationRequest,
     tool: PaidToolRegistration
@@ -204,7 +190,7 @@ export class PaymentVerifier {
       }
       const paymentPayload = (decodedPaymentPayload.paymentPayload as Record<string, unknown> | undefined)
         ?? decodedPaymentPayload;
-      const paymentRequirements = this.buildPaymentRequirements(request, tool);
+      const paymentRequirements = buildX402PaymentRequirement(this.config, tool, request.path) as unknown as Record<string, unknown>;
       const cdpPayload = cdpV2PhasePayload(paymentPayload, paymentRequirements);
       const baseUrl = this.config.x402FacilitatorUrl.replace(/\/$/, "");
 

@@ -3,8 +3,21 @@ export type FacilitatorProvider = "cdp" | "openfacilitator";
 export type PaymentStatus = "verified" | "unpaid" | "mock_verified";
 
 export interface PaymentChallenge {
-  error: "payment_required";
-  message: string;
+  x402Version: 1;
+  accepts: Array<{
+    scheme: "exact";
+    network: string;
+    maxAmountRequired: string;
+    resource: string;
+    description: string;
+    mimeType: "application/json";
+    payTo: string;
+    maxTimeoutSeconds: 300;
+    asset: string;
+    amount: string;
+  }>;
+  error: "X-PAYMENT header is required";
+  message?: string;
   payment: {
     version: "x402";
     mode: PaymentVerifierMode;

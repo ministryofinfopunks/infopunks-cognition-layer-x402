@@ -251,10 +251,42 @@ function buildReceiptViewSchema(): JsonSchema {
 function buildPaymentRequiredSchema(): JsonSchema {
   return {
     type: "object",
-    additionalProperties: false,
-    required: ["error", "message", "payment"],
+    additionalProperties: true,
+    required: ["x402Version", "accepts", "error"],
     properties: {
-      error: { type: "string", enum: ["payment_required"] },
+      x402Version: { type: "number", enum: [1] },
+      accepts: {
+        type: "array",
+        minItems: 1,
+        items: {
+          type: "object",
+          additionalProperties: true,
+          required: [
+            "scheme",
+            "network",
+            "maxAmountRequired",
+            "resource",
+            "description",
+            "mimeType",
+            "payTo",
+            "maxTimeoutSeconds",
+            "asset"
+          ],
+          properties: {
+            scheme: { type: "string", enum: ["exact"] },
+            network: { type: "string" },
+            maxAmountRequired: { type: "string" },
+            resource: { type: "string" },
+            description: { type: "string" },
+            mimeType: { type: "string", enum: ["application/json"] },
+            payTo: { type: "string" },
+            maxTimeoutSeconds: { type: "number" },
+            asset: { type: "string" },
+            amount: { type: "string" }
+          }
+        }
+      },
+      error: { type: "string", enum: ["X-PAYMENT header is required"] },
       message: { type: "string" },
       payment: {
         type: "object",
@@ -420,16 +452,29 @@ export function buildOpenApiPaths(config: AppConfig): Record<string, unknown> {
           "402": {
             description: "Payment required",
             headers: {
-              "payment-required": {
-                description: "Signals x402 challenge requirements.",
-                schema: { type: "string", example: "x402" }
+              "x402-payment-required": {
+                description: "Signals x402 payment is required.",
+                schema: { type: "string", example: "true" }
               }
             },
             content: {
               "application/json": {
                 schema: buildPaymentRequiredSchema(),
                 example: {
-                  error: "payment_required",
+                  x402Version: 1,
+                  accepts: [{
+                    scheme: "exact",
+                    network: config.x402Network,
+                    maxAmountRequired: price.priceAtomic,
+                    resource: `${config.publicBaseUrl}${tool.route}`,
+                    description: tool.discovery_description,
+                    mimeType: "application/json",
+                    payTo: config.x402PayTo,
+                    maxTimeoutSeconds: 300,
+                    asset: config.x402PaymentAssetAddress,
+                    amount: price.priceAtomic
+                  }],
+                  error: "X-PAYMENT header is required",
                   message: "x402 payment required for this endpoint.",
                   payment: {
                     version: "x402",
@@ -443,7 +488,7 @@ export function buildOpenApiPaths(config: AppConfig): Record<string, unknown> {
                     pay_to: config.x402PayTo,
                     required_header: config.x402VerifierMode === "mock" ? "x402-mock-payment: paid" : "x402-payment",
                     facilitator_url: config.x402FacilitatorUrl,
-                    resource: tool.route,
+                    resource: `${config.publicBaseUrl}${tool.route}`,
                     method: tool.method
                   }
                 }

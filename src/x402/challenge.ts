@@ -1,11 +1,15 @@
 import type { AppConfig } from "../config/env.js";
 import type { PaidToolRegistration } from "../registry/tools.js";
+import { buildX402PaymentRequirement } from "./paymentRequirements.js";
 import type { PaymentChallenge } from "./types.js";
 
-export function buildPaymentChallenge(config: AppConfig, tool: PaidToolRegistration): PaymentChallenge {
+export function buildPaymentChallenge(config: AppConfig, tool: PaidToolRegistration, requestPath: string): PaymentChallenge {
   const price = tool.getPrice(config);
+  const requirement = buildX402PaymentRequirement(config, tool, requestPath);
   return {
-    error: "payment_required",
+    x402Version: 1,
+    accepts: [requirement],
+    error: "X-PAYMENT header is required",
     message: "x402 payment required for this endpoint.",
     payment: {
       version: "x402",
@@ -19,7 +23,7 @@ export function buildPaymentChallenge(config: AppConfig, tool: PaidToolRegistrat
       pay_to: config.x402PayTo,
       required_header: config.x402VerifierMode === "mock" ? "x402-mock-payment: paid" : "x402-payment",
       facilitator_url: config.x402FacilitatorUrl,
-      resource: tool.route,
+      resource: requirement.resource,
       method: tool.method
     }
   };

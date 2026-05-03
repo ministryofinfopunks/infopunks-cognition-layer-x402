@@ -22,8 +22,8 @@ function sanitizeSummary(value: string): string {
 }
 
 function applyUnpaidX402Headers(config: AppConfig, reply: { header: (name: string, value: string) => void }): void {
-  reply.header("payment-required", "x402");
   reply.header("www-authenticate", `x402 realm="${config.serviceName}", units="1", rail="x402"`);
+  reply.header("x402-payment-required", "true");
   reply.header("x402-payment-rail", "x402");
   reply.header("x402-required", "true");
   reply.header("x402-pricing-units", "1");
@@ -63,13 +63,13 @@ export async function registerPaidToolRoute({
 
     const payment = await verifier.verify({
       method: tool.method,
-      path: tool.route,
+      path: request.url,
       headers: request.headers
     }, tool);
 
     if (!payment) {
       applyUnpaidX402Headers(config, reply);
-      return reply.status(402).send(buildPaymentChallenge(config, tool));
+      return reply.status(402).send(buildPaymentChallenge(config, tool, request.url));
     }
 
     const result = tool.runtime.execute(input);
