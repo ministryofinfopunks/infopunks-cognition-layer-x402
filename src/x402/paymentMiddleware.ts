@@ -7,6 +7,7 @@ import type { ReceiptRepository } from "../receipts/receiptStore.js";
 import type { PaidToolRegistration } from "../registry/tools.js";
 import { buildPaymentChallenge } from "./challenge.js";
 import { toX402NetworkName } from "./paymentRequirements.js";
+import type { PaymentFailureStage } from "./types.js";
 import { PaymentVerifier } from "./verify.js";
 
 interface RegisterPaidToolRouteOptions {
@@ -31,6 +32,23 @@ function applyUnpaidX402Headers(config: AppConfig, reply: { header: (name: strin
   reply.header("x402-supported-networks", toX402NetworkName(config.x402Network));
   reply.header("x402-accepted-assets", config.x402AssetSymbol);
   reply.header("x402-discovery", `${config.publicBaseUrl}/.well-known/infopunks-cognition-layer.json`);
+}
+
+function paymentChallengeErrorForStage(stage: PaymentFailureStage): string {
+  switch (stage) {
+    case "missing_payment_header":
+      return "X-PAYMENT header is required";
+    case "invalid_payment_payload":
+      return "Invalid x402 payment payload";
+    case "facilitator_verify_failed":
+      return "x402 facilitator verify failed";
+    case "facilitator_settle_failed":
+      return "x402 facilitator settle failed";
+    case "facilitator_exception":
+      return "x402 facilitator verification error";
+    default:
+      return "X-PAYMENT header is required";
+  }
 }
 
 export async function registerPaidToolRoute({
@@ -62,16 +80,21 @@ export async function registerPaidToolRoute({
       return reply.send(tool.runtime.execute(input));
     }
 
-    const payment = await verifier.verify({
+    const verification = await verifier.verify({
       method: tool.method,
       path: request.url,
       headers: request.headers
     }, tool);
 
-    if (!payment) {
+    if (!verification.payment) {
       applyUnpaidX402Headers(config, reply);
-      return reply.status(402).send(buildPaymentChallenge(config, tool, request.url));
+      const failureStage = verification.failure?.failure_stage ?? "missing_payment_header";
+      return reply.status(402).send(buildPaymentChallenge(config, tool, request.url, {
+        error: paymentChallengeErrorForStage(failureStage),
+        ...(config.x402DiagnosticMode ? { diagnostic: verification.failure } : {})
+      }));
     }
+    const payment = verification.payment;
 
     const result = tool.runtime.execute(input);
     const resultSummary = sanitizeSummary(tool.runtime.summarize(result));

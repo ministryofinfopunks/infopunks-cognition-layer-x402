@@ -6,21 +6,31 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { buildServer } from "../src/server.js";
 import { loadEnv } from "../src/config/env.js";
 
-async function createFacilitatorTestServer() {
+const TEST_BASE_URL = "http://127.0.0.1:4024";
+const TEST_PAY_TO = "0x1111111111111111111111111111111111111111";
+const BASE_USDC = "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913";
+const CDP_TEST_PRIVATE_KEY = `-----BEGIN EC PRIVATE KEY-----
+MHQCAQEEIClMBigeWs1zZiSmyfYj8qRuKScZQKEV4bAY9vDskSZjoAcGBSuBBAAK
+oUQDQgAEqczbBMrQChE+FA5Od0i5Qk5dSmCuNI2YOdFhl5zd+de/WiYMz9mmp4Ib
+5u3lwgrUAlip9f9fOTV4NCIUbBzk0Q==
+-----END EC PRIVATE KEY-----`;
+
+async function createFacilitatorTestServer(overrides: Record<string, string> = {}) {
   const runtimeDir = await mkdtemp(path.join(os.tmpdir(), "infopunks-cognition-layer-facilitator-"));
   const config = loadEnv({
     ...process.env,
     APP_ENVIRONMENT: "test",
     NODE_ENV: "test",
     PORT: "4024",
-    PUBLIC_BASE_URL: "http://127.0.0.1:4024",
+    PUBLIC_BASE_URL: TEST_BASE_URL,
     RUNTIME_DIR: runtimeDir,
     X402_VERIFIER_MODE: "facilitator",
     X402_FACILITATOR_PROVIDER: "cdp",
     X402_FACILITATOR_URL: "https://facilitator.test/v2/x402",
     X402_REQUIRED_DEFAULT: "true",
     CDP_API_KEY_ID: "test-key-id",
-    CDP_API_KEY_SECRET: "test-key-secret"
+    CDP_API_KEY_SECRET: CDP_TEST_PRIVATE_KEY,
+    ...overrides
   });
   const context = await buildServer(config);
   return { ...context, runtimeDir };
@@ -55,11 +65,38 @@ function samplePaymentPayloadBase64(): string {
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
 }
 
-test("facilitator mode requires a payment header", async () => {
-  const { app, runtimeDir } = await createFacilitatorTestServer();
+function assertOfficialChallenge(
+  response: { statusCode: number; json: () => any; headers: Record<string, string | undefined> },
+  route: string,
+  expectedError: string
+): any {
+  assert.equal(response.statusCode, 402);
+  const body = response.json();
+  assert.equal(body.x402Version, 1);
+  assert.equal(body.error, expectedError);
+  assert.ok(Array.isArray(body.accepts));
+  assert.ok(body.accepts.length > 0);
+  assert.equal(body.accepts[0].scheme, "exact");
+  assert.equal(body.accepts[0].network, "base");
+  assert.equal(body.accepts[0].maxAmountRequired, "10000");
+  assert.equal(body.accepts[0].resource, `${TEST_BASE_URL}${route}`);
+  assert.equal(body.accepts[0].payTo, TEST_PAY_TO);
+  assert.equal(body.accepts[0].asset, BASE_USDC);
+  assert.equal(body.accepts[0].extra.name, "USD Coin");
+  assert.equal(body.accepts[0].extra.version, "2");
+  assert.equal(response.headers["payment-required"], undefined);
+  assert.equal(response.headers["x402-payment-required"], "true");
+  assert.match(response.headers["x402-supported-networks"] ?? "", /base/);
+  return body;
+}
+
+test("missing header returns missing_payment_header diagnostic when enabled", async () => {
+  const { app, runtimeDir } = await createFacilitatorTestServer({
+    X402_DIAGNOSTIC_MODE: "true"
+  });
   const originalFetch = globalThis.fetch;
   const fetchCalls: string[] = [];
-  globalThis.fetch = async (input: URL | RequestInfo, init?: RequestInit) => {
+  globalThis.fetch = async (input: URL | RequestInfo) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
     fetchCalls.push(url);
     return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "content-type": "application/json" } });
@@ -73,7 +110,17 @@ test("facilitator mode requires a payment header", async () => {
         artifact: "Missing payment header should produce 402 in facilitator mode."
       }
     });
-    assert.equal(response.statusCode, 402);
+    const body = assertOfficialChallenge(response as any, "/v1/coherence-score", "X-PAYMENT header is required");
+    assert.deepEqual(body.diagnostic, {
+      failure_stage: "missing_payment_header",
+      payment_header_seen: false,
+      payment_header_name: null,
+      payment_value_length: null,
+      facilitator_verify_status: null,
+      facilitator_settle_status: null,
+      facilitator_error_code: null,
+      facilitator_error_message: null
+    });
     assert.equal(fetchCalls.length, 0);
   } finally {
     globalThis.fetch = originalFetch;
@@ -82,8 +129,52 @@ test("facilitator mode requires a payment header", async () => {
   }
 });
 
+test("invalid payment header returns structured diagnostic without leaking raw value", async () => {
+  const { app, runtimeDir } = await createFacilitatorTestServer({
+    X402_DIAGNOSTIC_MODE: "true"
+  });
+  const originalFetch = globalThis.fetch;
+  const calls: string[] = [];
+  globalThis.fetch = async (input: URL | RequestInfo) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    calls.push(url);
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+  };
+
+  const dummyPayment = "dummy-payment-raw-value-should-not-leak";
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/coherence-score",
+      headers: {
+        "x402-payment": dummyPayment
+      },
+      payload: {
+        artifact: "Invalid header should produce typed diagnostic failure."
+      }
+    });
+    const body = assertOfficialChallenge(response as any, "/v1/coherence-score", "Invalid x402 payment payload");
+    assert.equal(body.diagnostic.payment_header_seen, true);
+    assert.equal(body.diagnostic.payment_header_name, "x402-payment");
+    assert.equal(body.diagnostic.payment_value_length, dummyPayment.length);
+    assert.equal(body.diagnostic.failure_stage, "invalid_payment_payload");
+    assert.equal(calls.length, 0);
+    assert.equal(JSON.stringify(body.diagnostic).includes(dummyPayment), false);
+    assert.equal(response.body.includes(dummyPayment), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await app.close();
+    await rm(runtimeDir, { recursive: true, force: true });
+  }
+});
+
 test("facilitator mode calls verify then settle and returns settled receipt", async () => {
-  const { app, runtimeDir } = await createFacilitatorTestServer();
+  const { app, runtimeDir } = await createFacilitatorTestServer({
+    X402_FACILITATOR_PROVIDER: "openfacilitator"
+  });
   const originalFetch = globalThis.fetch;
   const calls: Array<{ url: string; body: Record<string, unknown> }> = [];
 
@@ -135,10 +226,10 @@ test("facilitator mode calls verify then settle and returns settled receipt", as
     assert.equal(paymentRequirements.scheme, "exact");
     assert.equal(paymentRequirements.network, "base");
     assert.equal(paymentRequirements.asset, "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913");
-    assert.equal(paymentRequirements.payTo, "0x1111111111111111111111111111111111111111");
+    assert.equal(paymentRequirements.payTo, TEST_PAY_TO);
     assert.equal(paymentRequirements.amount, "10000");
     assert.equal(paymentRequirements.maxAmountRequired, "10000");
-    assert.equal(paymentRequirements.resource, "http://127.0.0.1:4024/v1/coherence-score");
+    assert.equal(paymentRequirements.resource, `${TEST_BASE_URL}/v1/coherence-score`);
     assert.equal(paymentRequirements.mimeType, "application/json");
     assert.deepEqual(paymentRequirements.extra, { name: "USD Coin", version: "2" });
     assert.deepEqual(settlePaymentRequirements.extra, { name: "USD Coin", version: "2" });
@@ -150,7 +241,10 @@ test("facilitator mode calls verify then settle and returns settled receipt", as
 });
 
 test("facilitator mode returns 402 when verify fails", async () => {
-  const { app, runtimeDir } = await createFacilitatorTestServer();
+  const { app, runtimeDir } = await createFacilitatorTestServer({
+    X402_DIAGNOSTIC_MODE: "true",
+    X402_FACILITATOR_PROVIDER: "openfacilitator"
+  });
   const originalFetch = globalThis.fetch;
   const calls: string[] = [];
 
@@ -174,7 +268,12 @@ test("facilitator mode returns 402 when verify fails", async () => {
         artifact: "Verify failure should map to unpaid response."
       }
     });
-    assert.equal(response.statusCode, 402);
+    const body = assertOfficialChallenge(response as any, "/v1/coherence-score", "x402 facilitator verify failed");
+    assert.equal(body.diagnostic.failure_stage, "facilitator_verify_failed");
+    assert.equal(body.diagnostic.payment_header_seen, true);
+    assert.equal(body.diagnostic.payment_header_name, "x402-payment");
+    assert.equal(body.diagnostic.facilitator_verify_status, 200);
+    assert.equal(body.diagnostic.facilitator_settle_status, null);
     assert.equal(calls.length, 1);
     assert.match(calls[0] ?? "", /\/verify$/);
   } finally {
@@ -185,7 +284,10 @@ test("facilitator mode returns 402 when verify fails", async () => {
 });
 
 test("facilitator mode returns 402 when settle fails", async () => {
-  const { app, runtimeDir } = await createFacilitatorTestServer();
+  const { app, runtimeDir } = await createFacilitatorTestServer({
+    X402_DIAGNOSTIC_MODE: "true",
+    X402_FACILITATOR_PROVIDER: "openfacilitator"
+  });
   const originalFetch = globalThis.fetch;
   const calls: string[] = [];
 
@@ -215,10 +317,57 @@ test("facilitator mode returns 402 when settle fails", async () => {
         artifact: "Settle failure should map to unpaid response."
       }
     });
-    assert.equal(response.statusCode, 402);
+    const body = assertOfficialChallenge(response as any, "/v1/coherence-score", "x402 facilitator settle failed");
+    assert.equal(body.diagnostic.failure_stage, "facilitator_settle_failed");
+    assert.equal(body.diagnostic.payment_header_seen, true);
+    assert.equal(body.diagnostic.payment_header_name, "payment-signature");
+    assert.equal(body.diagnostic.facilitator_verify_status, 200);
+    assert.equal(body.diagnostic.facilitator_settle_status, 500);
     assert.equal(calls.length, 2);
     assert.match(calls[0] ?? "", /\/verify$/);
     assert.match(calls[1] ?? "", /\/settle$/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await app.close();
+    await rm(runtimeDir, { recursive: true, force: true });
+  }
+});
+
+test("facilitator auth exception returns facilitator_exception diagnostic", async () => {
+  const { app, runtimeDir } = await createFacilitatorTestServer({
+    X402_DIAGNOSTIC_MODE: "true",
+    X402_FACILITATOR_PROVIDER: "cdp",
+    CDP_API_KEY_SECRET: "invalid-cdp-secret"
+  });
+  const originalFetch = globalThis.fetch;
+  const calls: string[] = [];
+  globalThis.fetch = async (input: URL | RequestInfo) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    calls.push(url);
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "content-type": "application/json" }
+    });
+  };
+
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/coherence-score",
+      headers: {
+        "x-payment": samplePaymentPayloadBase64()
+      },
+      payload: {
+        artifact: "Auth failures should map to facilitator_exception stage."
+      }
+    });
+    const body = assertOfficialChallenge(response as any, "/v1/coherence-score", "x402 facilitator verification error");
+    assert.equal(body.diagnostic.failure_stage, "facilitator_exception");
+    assert.equal(body.diagnostic.payment_header_seen, true);
+    assert.equal(body.diagnostic.payment_header_name, "x-payment");
+    assert.equal(body.diagnostic.payment_value_length, samplePaymentPayloadBase64().length);
+    assert.equal(typeof body.diagnostic.facilitator_error_message, "string");
+    assert.equal(calls.length, 0);
   } finally {
     globalThis.fetch = originalFetch;
     await app.close();

@@ -24,6 +24,7 @@ export interface AppConfig {
   x402FacilitatorProvider: FacilitatorProvider;
   x402FacilitatorUrl: string | null;
   x402VerifierTimeoutMs: number;
+  x402DiagnosticMode: boolean;
   x402Network: string;
   x402AssetSymbol: string;
   x402PaymentAssetAddress: string;
@@ -157,6 +158,7 @@ export function loadEnv(env: NodeJS.ProcessEnv = process.env): AppConfig {
       ? env.X402_FACILITATOR_URL.trim()
       : (verifierMode === "facilitator" && facilitatorProvider === "cdp" ? CDP_FACILITATOR_URL : null),
     x402VerifierTimeoutMs: parsePositiveInt("X402_VERIFIER_TIMEOUT_MS", env.X402_VERIFIER_TIMEOUT_MS, 5000),
+    x402DiagnosticMode: parseBoolean(env.X402_DIAGNOSTIC_MODE, false),
     x402Network: String(env.X402_NETWORK ?? BASE_MAINNET_CAIP2).trim(),
     x402AssetSymbol: String(env.X402_ASSET_SYMBOL ?? "USDC").trim().toUpperCase(),
     x402PaymentAssetAddress: String(env.X402_PAYMENT_ASSET_ADDRESS ?? BASE_MAINNET_USDC).trim(),

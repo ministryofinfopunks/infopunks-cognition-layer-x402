@@ -1,6 +1,23 @@
 export type PaymentVerifierMode = "mock" | "facilitator";
 export type FacilitatorProvider = "cdp" | "openfacilitator";
 export type PaymentStatus = "verified" | "unpaid" | "mock_verified";
+export type PaymentFailureStage =
+  | "missing_payment_header"
+  | "invalid_payment_payload"
+  | "facilitator_verify_failed"
+  | "facilitator_settle_failed"
+  | "facilitator_exception";
+
+export interface PaymentVerificationFailure {
+  failure_stage: PaymentFailureStage;
+  payment_header_seen: boolean;
+  payment_header_name: string | null;
+  payment_value_length: number | null;
+  facilitator_verify_status: number | null;
+  facilitator_settle_status: number | null;
+  facilitator_error_code: string | null;
+  facilitator_error_message: string | null;
+}
 
 export interface PaymentChallenge {
   x402Version: 1;
@@ -20,7 +37,7 @@ export interface PaymentChallenge {
       version: string;
     };
   }>;
-  error: "X-PAYMENT header is required";
+  error: string;
   message?: string;
   payment: {
     version: "x402";
@@ -37,6 +54,7 @@ export interface PaymentChallenge {
     resource: string;
     method: string;
   };
+  diagnostic?: PaymentVerificationFailure;
 }
 
 export interface PaymentVerificationResult {
@@ -48,6 +66,11 @@ export interface PaymentVerificationResult {
   verifier: string;
   settlementReference?: string;
   settlementStatus?: "settled" | "verified";
+}
+
+export interface PaymentVerificationOutcome {
+  payment: PaymentVerificationResult | null;
+  failure: PaymentVerificationFailure | null;
 }
 
 export interface PublicReceipt {

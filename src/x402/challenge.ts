@@ -1,15 +1,25 @@
 import type { AppConfig } from "../config/env.js";
 import type { PaidToolRegistration } from "../registry/tools.js";
 import { buildX402PaymentRequirement } from "./paymentRequirements.js";
-import type { PaymentChallenge } from "./types.js";
+import type { PaymentChallenge, PaymentVerificationFailure } from "./types.js";
 
-export function buildPaymentChallenge(config: AppConfig, tool: PaidToolRegistration, requestPath: string): PaymentChallenge {
+interface BuildPaymentChallengeOptions {
+  error: string;
+  diagnostic?: PaymentVerificationFailure | null;
+}
+
+export function buildPaymentChallenge(
+  config: AppConfig,
+  tool: PaidToolRegistration,
+  requestPath: string,
+  options: BuildPaymentChallengeOptions
+): PaymentChallenge {
   const price = tool.getPrice(config);
   const requirement = buildX402PaymentRequirement(config, tool, requestPath);
   return {
     x402Version: 1,
     accepts: [requirement],
-    error: "X-PAYMENT header is required",
+    error: options.error,
     message: "x402 payment required for this endpoint.",
     payment: {
       version: "x402",
@@ -25,6 +35,7 @@ export function buildPaymentChallenge(config: AppConfig, tool: PaidToolRegistrat
       facilitator_url: config.x402FacilitatorUrl,
       resource: requirement.resource,
       method: tool.method
-    }
+    },
+    ...(options.diagnostic ? { diagnostic: options.diagnostic } : {})
   };
 }

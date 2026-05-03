@@ -82,6 +82,7 @@ test("unpaid requests receive x402 challenge", async () => {
       const body = response.json();
       assert.equal(body.x402Version, 1);
       assert.equal(body.error, "X-PAYMENT header is required");
+      assert.equal(body.diagnostic, undefined);
       assert.ok(Array.isArray(body.accepts));
       assert.ok(body.accepts.length > 0);
       assert.equal(body.accepts[0].scheme, "exact");
