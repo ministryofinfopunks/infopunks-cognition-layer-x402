@@ -79,6 +79,7 @@ function assertOfficialChallenge(
   assert.equal(body.accepts[0].scheme, "exact");
   assert.equal(body.accepts[0].network, "base");
   assert.equal(body.accepts[0].maxAmountRequired, "10000");
+  assert.equal(body.accepts[0].amount, undefined);
   assert.equal(body.accepts[0].resource, `${TEST_BASE_URL}${route}`);
   assert.equal(body.accepts[0].payTo, TEST_PAY_TO);
   assert.equal(body.accepts[0].asset, BASE_USDC);
@@ -227,7 +228,8 @@ test("facilitator mode calls verify then settle and returns settled receipt", as
     assert.equal(paymentRequirements.network, "base");
     assert.equal(paymentRequirements.asset, "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913");
     assert.equal(paymentRequirements.payTo, TEST_PAY_TO);
-    assert.equal(paymentRequirements.amount, "10000");
+    assert.equal(paymentRequirements.amount, undefined);
+    assert.equal(settlePaymentRequirements.amount, undefined);
     assert.equal(paymentRequirements.maxAmountRequired, "10000");
     assert.equal(paymentRequirements.resource, `${TEST_BASE_URL}/v1/coherence-score`);
     assert.equal(paymentRequirements.mimeType, "application/json");

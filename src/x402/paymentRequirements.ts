@@ -11,7 +11,6 @@ export interface X402PaymentRequirement {
   payTo: string;
   maxTimeoutSeconds: 300;
   asset: string;
-  amount: string;
   extra?: {
     name: string;
     version: string;
@@ -57,8 +56,6 @@ export function buildX402PaymentRequirement(
     payTo: config.x402PayTo,
     maxTimeoutSeconds: 300,
     asset: config.x402PaymentAssetAddress,
-    // CDP verify/settle expects amount in paymentRequirements.
-    amount: price.priceAtomic,
     ...(isBaseUsdc
       ? {
         extra: {

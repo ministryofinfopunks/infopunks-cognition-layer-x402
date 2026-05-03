@@ -281,8 +281,7 @@ function buildPaymentRequiredSchema(): JsonSchema {
             mimeType: { type: "string", enum: ["application/json"] },
             payTo: { type: "string" },
             maxTimeoutSeconds: { type: "number" },
-            asset: { type: "string" },
-            amount: { type: "string" }
+            asset: { type: "string" }
           }
         }
       },
@@ -471,8 +470,7 @@ export function buildOpenApiPaths(config: AppConfig): Record<string, unknown> {
                     mimeType: "application/json",
                     payTo: config.x402PayTo,
                     maxTimeoutSeconds: 300,
-                    asset: config.x402PaymentAssetAddress,
-                    amount: price.priceAtomic
+                    asset: config.x402PaymentAssetAddress
                   }],
                   error: "X-PAYMENT header is required",
                   message: "x402 payment required for this endpoint.",

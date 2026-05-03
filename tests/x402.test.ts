@@ -88,6 +88,7 @@ test("unpaid requests receive x402 challenge", async () => {
       assert.equal(body.accepts[0].scheme, "exact");
       assert.equal(body.accepts[0].network, "base");
       assert.equal(body.accepts[0].maxAmountRequired, "10000");
+      assert.equal(body.accepts[0].amount, undefined);
       assert.equal(body.accepts[0].resource, `http://127.0.0.1:4024${unpaidCase.route}`);
       assert.equal(body.accepts[0].payTo, "0x1111111111111111111111111111111111111111");
       assert.equal(body.accepts[0].asset, "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913");

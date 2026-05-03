@@ -31,7 +31,6 @@ export interface PaymentChallenge {
     payTo: string;
     maxTimeoutSeconds: 300;
     asset: string;
-    amount: string;
     extra?: {
       name: string;
       version: string;
