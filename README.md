@@ -15,6 +15,32 @@ Signal Amplifier becomes `/v1/extract-signal`.
 Narrative Simulator becomes `/v1/simulate-narrative`.
 Coherence Score becomes the missing measurement layer.
 
+## Live x402 Cognition Layer
+
+Base URL: https://infopunks-cognition-layer-x402.onrender.com
+
+Infopunks Cognition Layer is an x402-paid cultural intelligence API for agents and humans on Base.
+
+Paid endpoints:
+
+- `POST /v1/coherence-score`
+- `POST /v1/extract-signal`
+- `POST /v1/simulate-narrative`
+
+Public surfaces:
+
+- OpenAPI: https://infopunks-cognition-layer-x402.onrender.com/openapi.json
+- Discovery manifest: https://infopunks-cognition-layer-x402.onrender.com/.well-known/infopunks-cognition-layer.json
+- Bazaar metadata: https://infopunks-cognition-layer-x402.onrender.com/.well-known/x402-bazaar.json
+- Events feed: https://infopunks-cognition-layer-x402.onrender.com/v1/events/recent
+- Proof index: https://infopunks-cognition-layer-x402.onrender.com/proof
+
+Verified CDP x402 settled receipts:
+
+- Coherence: https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_9d334cc2-af87-4187-8288-3a2b92077cde
+- Signal: https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_d2647bd7-9450-4412-87a4-24de0d088398
+- Narrative: https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_b690a47c-04a9-46fc-8715-94d0dcfe0a86
+
 ## Service surface
 
 - `GET /health`
