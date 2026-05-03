@@ -241,7 +241,9 @@ function buildReceiptViewSchema(): JsonSchema {
       payTo: { type: "string" },
       result_hash: { type: "string" },
       created_at: { type: "string", format: "date-time" },
-      proof_url: { type: "string", format: "uri" }
+      proof_url: { type: "string", format: "uri" },
+      settlement_reference: { type: "string" },
+      settlement_status: { type: "string", enum: ["settled", "verified"] }
     }
   };
 }

@@ -15,7 +15,9 @@ test("production public URL validation rejects localhost", () => {
       X402_NETWORK: "eip155:8453",
       X402_ASSET_SYMBOL: "USDC",
       X402_PAYMENT_ASSET_ADDRESS: "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913",
-      X402_PAY_TO: "0x2222222222222222222222222222222222222222"
+      X402_PAY_TO: "0x2222222222222222222222222222222222222222",
+      CDP_API_KEY_ID: "test-key-id",
+      CDP_API_KEY_SECRET: "test-key-secret"
     });
   }, /Production URLs cannot contain localhost/);
 });

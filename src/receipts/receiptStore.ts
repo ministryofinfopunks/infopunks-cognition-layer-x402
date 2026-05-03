@@ -43,7 +43,9 @@ export class ReceiptStore implements ReceiptRepository {
       payTo: this.config.x402PayTo,
       result_hash: input.resultHash,
       created_at: input.payment.verifiedAt,
-      proof_url: proofUrl
+      proof_url: proofUrl,
+      ...(input.payment.settlementReference ? { settlement_reference: input.payment.settlementReference } : {}),
+      ...(input.payment.settlementStatus ? { settlement_status: input.payment.settlementStatus } : {})
     };
     const record: ReceiptRecord = {
       receipt,

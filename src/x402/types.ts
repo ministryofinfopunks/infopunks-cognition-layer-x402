@@ -1,4 +1,5 @@
 export type PaymentVerifierMode = "mock" | "facilitator";
+export type FacilitatorProvider = "cdp" | "openfacilitator";
 export type PaymentStatus = "verified" | "unpaid" | "mock_verified";
 
 export interface PaymentChallenge {
@@ -28,6 +29,8 @@ export interface PaymentVerificationResult {
   reference: string;
   verifiedAt: string;
   verifier: string;
+  settlementReference?: string;
+  settlementStatus?: "settled" | "verified";
 }
 
 export interface PublicReceipt {
@@ -43,6 +46,8 @@ export interface PublicReceipt {
   result_hash: string;
   created_at: string;
   proof_url: string;
+  settlement_reference?: string;
+  settlement_status?: "settled" | "verified";
 }
 
 export interface ReceiptRecord {
