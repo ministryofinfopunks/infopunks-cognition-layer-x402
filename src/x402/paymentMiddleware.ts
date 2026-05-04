@@ -7,7 +7,7 @@ import type { ReceiptRepository } from "../receipts/receiptStore.js";
 import type { PaidToolRegistration } from "../registry/tools.js";
 import { buildPaymentChallenge } from "./challenge.js";
 import { toX402NetworkName } from "./paymentRequirements.js";
-import type { PaymentFailureStage } from "./types.js";
+import type { PaymentFailureStage, PaymentVerificationResult } from "./types.js";
 import { PaymentVerifier } from "./verify.js";
 
 interface RegisterPaidToolRouteOptions {
@@ -32,6 +32,10 @@ function applyUnpaidX402Headers(config: AppConfig, reply: { header: (name: strin
   reply.header("x402-supported-networks", toX402NetworkName(config.x402Network));
   reply.header("x402-accepted-assets", config.x402AssetSymbol);
   reply.header("x402-discovery", `${config.publicBaseUrl}/.well-known/infopunks-cognition-layer.json`);
+}
+
+function encodePaymentRequiredHeader(payload: unknown): string {
+  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
 }
 
 function paymentChallengeErrorForStage(stage: PaymentFailureStage): string {
@@ -60,6 +64,27 @@ export async function registerPaidToolRoute({
   tool
 }: RegisterPaidToolRouteOptions): Promise<void> {
   app.post(tool.route, async (request, reply) => {
+    let payment: PaymentVerificationResult | undefined;
+    if (config.x402RequiredDefault) {
+      const verification = await verifier.verify({
+        method: tool.method,
+        path: request.url,
+        headers: request.headers
+      }, tool);
+
+      if (!verification.payment) {
+        const failureStage = verification.failure?.failure_stage ?? "missing_payment_header";
+        const challenge = buildPaymentChallenge(config, tool, request.url, {
+          error: paymentChallengeErrorForStage(failureStage),
+          ...(config.x402DiagnosticMode ? { diagnostic: verification.failure } : {})
+        });
+        applyUnpaidX402Headers(config, reply);
+        reply.header("payment-required", encodePaymentRequiredHeader(challenge));
+        return reply.status(402).send(challenge);
+      }
+      payment = verification.payment;
+    }
+
     let input: unknown;
     try {
       input = tool.runtime.inputSchema.parse(request.body);
@@ -79,22 +104,9 @@ export async function registerPaidToolRoute({
     if (!config.x402RequiredDefault) {
       return reply.send(tool.runtime.execute(input));
     }
-
-    const verification = await verifier.verify({
-      method: tool.method,
-      path: request.url,
-      headers: request.headers
-    }, tool);
-
-    if (!verification.payment) {
-      applyUnpaidX402Headers(config, reply);
-      const failureStage = verification.failure?.failure_stage ?? "missing_payment_header";
-      return reply.status(402).send(buildPaymentChallenge(config, tool, request.url, {
-        error: paymentChallengeErrorForStage(failureStage),
-        ...(config.x402DiagnosticMode ? { diagnostic: verification.failure } : {})
-      }));
+    if (!payment) {
+      throw new Error("Paid route missing verified payment.");
     }
-    const payment = verification.payment;
 
     const result = tool.runtime.execute(input);
     const resultSummary = sanitizeSummary(tool.runtime.summarize(result));

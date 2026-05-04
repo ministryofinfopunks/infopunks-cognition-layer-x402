@@ -41,7 +41,7 @@ function samplePaymentPayloadBase64(): string {
     x402Version: 2,
     accepted: {
       scheme: "exact",
-      network: "base",
+      network: "eip155:8453",
       asset: "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913",
       amount: "10000",
       payTo: "0x1111111111111111111111111111111111111111",
@@ -65,6 +65,12 @@ function samplePaymentPayloadBase64(): string {
   return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
 }
 
+function decodePaymentRequired(response: { headers: Record<string, string | undefined> }): any {
+  const encoded = response.headers["payment-required"];
+  assert.equal(typeof encoded, "string");
+  return JSON.parse(Buffer.from(String(encoded), "base64").toString("utf8"));
+}
+
 function assertOfficialChallenge(
   response: { statusCode: number; json: () => any; headers: Record<string, string | undefined> },
   route: string,
@@ -72,22 +78,27 @@ function assertOfficialChallenge(
 ): any {
   assert.equal(response.statusCode, 402);
   const body = response.json();
-  assert.equal(body.x402Version, 1);
+  const decoded = decodePaymentRequired(response);
+  assert.deepEqual(decoded, body);
+  assert.equal(body.x402Version, 2);
   assert.equal(body.error, expectedError);
   assert.ok(Array.isArray(body.accepts));
   assert.ok(body.accepts.length > 0);
   assert.equal(body.accepts[0].scheme, "exact");
-  assert.equal(body.accepts[0].network, "base");
-  assert.equal(body.accepts[0].maxAmountRequired, "10000");
-  assert.equal(body.accepts[0].amount, undefined);
-  assert.equal(body.accepts[0].resource, `${TEST_BASE_URL}${route}`);
+  assert.equal(body.accepts[0].network, "eip155:8453");
+  assert.equal(body.accepts[0].chain, "Base");
+  assert.equal(body.accepts[0].amount, "10000");
+  assert.equal(body.accepts[0].resource.url, `${TEST_BASE_URL}${route}`);
   assert.equal(body.accepts[0].payTo, TEST_PAY_TO);
   assert.equal(body.accepts[0].asset, BASE_USDC);
   assert.equal(body.accepts[0].extra.name, "USD Coin");
   assert.equal(body.accepts[0].extra.version, "2");
-  assert.equal(response.headers["payment-required"], undefined);
   assert.equal(response.headers["x402-payment-required"], "true");
-  assert.match(response.headers["x402-supported-networks"] ?? "", /base/);
+  assert.equal(response.headers["x402-supported-networks"], "eip155:8453");
+  assert.equal(body.resource.routeTemplate, route);
+  assert.ok(body.extensions?.bazaar);
+  assert.deepEqual(body.extensions?.bazaar, body.resource?.extensions?.bazaar);
+  assert.deepEqual(body.extensions?.bazaar, body.accepts?.[0]?.resource?.extensions?.bazaar);
   return body;
 }
 
@@ -225,16 +236,64 @@ test("facilitator mode calls verify then settle and returns settled receipt", as
     const paymentRequirements = (verifyBody.paymentRequirements ?? {}) as Record<string, unknown>;
     const settlePaymentRequirements = (settleBody.paymentRequirements ?? {}) as Record<string, unknown>;
     assert.equal(paymentRequirements.scheme, "exact");
-    assert.equal(paymentRequirements.network, "base");
+    assert.equal(paymentRequirements.network, "eip155:8453");
+    assert.equal(paymentRequirements.chain, "Base");
     assert.equal(paymentRequirements.asset, "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913");
     assert.equal(paymentRequirements.payTo, TEST_PAY_TO);
-    assert.equal(paymentRequirements.amount, undefined);
-    assert.equal(settlePaymentRequirements.amount, undefined);
-    assert.equal(paymentRequirements.maxAmountRequired, "10000");
-    assert.equal(paymentRequirements.resource, `${TEST_BASE_URL}/v1/coherence-score`);
+    assert.equal(paymentRequirements.amount, "10000");
+    assert.equal(settlePaymentRequirements.amount, "10000");
+    assert.equal((paymentRequirements.resource as { url: string }).url, `${TEST_BASE_URL}/v1/coherence-score`);
     assert.equal(paymentRequirements.mimeType, "application/json");
     assert.deepEqual(paymentRequirements.extra, { name: "USD Coin", version: "2" });
     assert.deepEqual(settlePaymentRequirements.extra, { name: "USD Coin", version: "2" });
+  } finally {
+    globalThis.fetch = originalFetch;
+    await app.close();
+    await rm(runtimeDir, { recursive: true, force: true });
+  }
+});
+
+test("facilitator paid request verifies payment before returning 400 for invalid body", async () => {
+  const { app, runtimeDir } = await createFacilitatorTestServer({
+    X402_FACILITATOR_PROVIDER: "openfacilitator"
+  });
+  const originalFetch = globalThis.fetch;
+  const calls: string[] = [];
+
+  globalThis.fetch = async (input: URL | RequestInfo) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    calls.push(url);
+    if (url.endsWith("/verify")) {
+      return new Response(JSON.stringify({ isValid: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    if (url.endsWith("/settle")) {
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" }
+      });
+    }
+    return new Response("not found", { status: 404 });
+  };
+
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/v1/coherence-score",
+      headers: {
+        "x402-payment": samplePaymentPayloadBase64()
+      },
+      payload: {}
+    });
+
+    assert.equal(response.statusCode, 400);
+    const body = response.json();
+    assert.equal(body.error, "invalid_request");
+    assert.equal(calls.length, 2);
+    assert.match(calls[0] ?? "", /\/verify$/);
+    assert.match(calls[1] ?? "", /\/settle$/);
   } finally {
     globalThis.fetch = originalFetch;
     await app.close();

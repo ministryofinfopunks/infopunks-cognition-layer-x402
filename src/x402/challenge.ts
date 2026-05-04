@@ -16,9 +16,14 @@ export function buildPaymentChallenge(
 ): PaymentChallenge {
   const price = tool.getPrice(config);
   const requirement = buildX402PaymentRequirement(config, tool, requestPath);
+  const bazaar = requirement.resource.extensions.bazaar;
   return {
-    x402Version: 1,
+    x402Version: 2,
+    resource: requirement.resource,
     accepts: [requirement],
+    extensions: {
+      bazaar
+    },
     error: options.error,
     message: "x402 payment required for this endpoint.",
     payment: {
@@ -33,7 +38,7 @@ export function buildPaymentChallenge(
       pay_to: config.x402PayTo,
       required_header: config.x402VerifierMode === "mock" ? "x402-mock-payment: paid" : "x402-payment",
       facilitator_url: config.x402FacilitatorUrl,
-      resource: requirement.resource,
+      resource: requirement.resource.url,
       method: tool.method
     },
     ...(options.diagnostic ? { diagnostic: options.diagnostic } : {})

@@ -252,9 +252,24 @@ function buildPaymentRequiredSchema(): JsonSchema {
   return {
     type: "object",
     additionalProperties: true,
-    required: ["x402Version", "accepts", "error"],
+    required: ["x402Version", "resource", "accepts", "extensions", "error"],
     properties: {
-      x402Version: { type: "number", enum: [1] },
+      x402Version: { type: "number", enum: [2] },
+      resource: {
+        type: "object",
+        additionalProperties: true,
+        required: ["resource", "url", "description", "mimeType", "inputSchema", "outputSchema", "extensions"],
+        properties: {
+          resource: { type: "string" },
+          url: { type: "string" },
+          routeTemplate: { type: "string" },
+          description: { type: "string" },
+          mimeType: { type: "string", enum: ["application/json"] },
+          inputSchema: { type: "object", additionalProperties: true },
+          outputSchema: { type: "object", additionalProperties: true },
+          extensions: { type: "object", additionalProperties: true }
+        }
+      },
       accepts: {
         type: "array",
         minItems: 1,
@@ -264,7 +279,7 @@ function buildPaymentRequiredSchema(): JsonSchema {
           required: [
             "scheme",
             "network",
-            "maxAmountRequired",
+            "amount",
             "resource",
             "description",
             "mimeType",
@@ -275,14 +290,22 @@ function buildPaymentRequiredSchema(): JsonSchema {
           properties: {
             scheme: { type: "string", enum: ["exact"] },
             network: { type: "string" },
-            maxAmountRequired: { type: "string" },
-            resource: { type: "string" },
+            chain: { type: "string", enum: ["Base"] },
+            amount: { type: "string" },
+            resource: { type: "object", additionalProperties: true },
             description: { type: "string" },
             mimeType: { type: "string", enum: ["application/json"] },
             payTo: { type: "string" },
             maxTimeoutSeconds: { type: "number" },
             asset: { type: "string" }
           }
+        }
+      },
+      extensions: {
+        type: "object",
+        additionalProperties: true,
+        properties: {
+          bazaar: { type: "object", additionalProperties: true }
         }
       },
       error: { type: "string", enum: ["X-PAYMENT header is required"] },
@@ -460,18 +483,62 @@ export function buildOpenApiPaths(config: AppConfig): Record<string, unknown> {
               "application/json": {
                 schema: buildPaymentRequiredSchema(),
                 example: {
-                  x402Version: 1,
+                  x402Version: 2,
+                  resource: {
+                    resource: `${config.publicBaseUrl}${tool.route}`,
+                    url: `${config.publicBaseUrl}${tool.route}`,
+                    routeTemplate: tool.route,
+                    description: tool.discovery_description,
+                    mimeType: "application/json",
+                    inputSchema: tool.input_schema,
+                    outputSchema: tool.output_schema,
+                    extensions: {
+                      bazaar: {
+                        info: {
+                          input: {
+                            type: "http",
+                            method: "POST",
+                            bodyType: "json",
+                            body: tool.runtime.exampleRequest
+                          },
+                          output: {
+                            type: "json",
+                            example: tool.runtime.exampleResponse
+                          }
+                        },
+                        schema: {
+                          type: "object"
+                        }
+                      }
+                    }
+                  },
                   accepts: [{
                     scheme: "exact",
                     network: config.x402Network,
-                    maxAmountRequired: price.priceAtomic,
-                    resource: `${config.publicBaseUrl}${tool.route}`,
+                    chain: "Base",
+                    amount: price.priceAtomic,
+                    resource: {
+                      resource: `${config.publicBaseUrl}${tool.route}`,
+                      url: `${config.publicBaseUrl}${tool.route}`
+                    },
                     description: tool.discovery_description,
                     mimeType: "application/json",
                     payTo: config.x402PayTo,
                     maxTimeoutSeconds: 300,
                     asset: config.x402PaymentAssetAddress
                   }],
+                  extensions: {
+                    bazaar: {
+                      info: {
+                        input: {
+                          type: "http"
+                        }
+                      },
+                      schema: {
+                        type: "object"
+                      }
+                    }
+                  },
                   error: "X-PAYMENT header is required",
                   message: "x402 payment required for this endpoint.",
                   payment: {

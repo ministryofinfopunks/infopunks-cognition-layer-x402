@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@coinbase/x402": "^2.1.0",
+    "@x402/extensions": "^2.11.0",
     "fastify": "^5.3.3",
     "zod": "^3.25.56"
   },
