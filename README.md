@@ -15,6 +15,11 @@ Signal Amplifier becomes `/v1/extract-signal`.
 Narrative Simulator becomes `/v1/simulate-narrative`.
 Coherence Score becomes the missing measurement layer.
 
+## Mainnet Proof Archive
+
+Canonical Infopunks v0 proof archive:
+https://github.com/ministryofinfopunks/infopunks-v0-mainnet-proof
+
 ## Live x402 Cognition Layer
 
 Base URL: https://infopunks-cognition-layer-x402.onrender.com
