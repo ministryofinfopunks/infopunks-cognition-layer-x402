@@ -7,7 +7,7 @@ import type { ReceiptRepository } from "../receipts/receiptStore.js";
 import type { PaidToolRegistration } from "../registry/tools.js";
 import { buildPaymentChallenge } from "./challenge.js";
 import { toX402NetworkName } from "./paymentRequirements.js";
-import type { PaymentFailureStage, PaymentVerificationResult } from "./types.js";
+import type { PaymentChallenge, PaymentFailureStage, PaymentVerificationResult } from "./types.js";
 import { PaymentVerifier } from "./verify.js";
 
 interface RegisterPaidToolRouteOptions {
@@ -34,8 +34,26 @@ function applyUnpaidX402Headers(config: AppConfig, reply: { header: (name: strin
   reply.header("x402-discovery", `${config.publicBaseUrl}/.well-known/infopunks-cognition-layer.json`);
 }
 
-function encodePaymentRequiredHeader(payload: unknown): string {
-  return Buffer.from(JSON.stringify(payload), "utf8").toString("base64");
+function buildCompactPaymentRequiredHeaderPayload(challenge: PaymentChallenge): Record<string, unknown> {
+  return {
+    x402Version: challenge.x402Version,
+    accepts: challenge.accepts.map((entry) => ({
+      scheme: entry.scheme,
+      network: entry.network,
+      chain: entry.chain,
+      amount: entry.amount,
+      asset: entry.asset,
+      payTo: entry.payTo,
+      resource: entry.resource.url,
+      maxTimeoutSeconds: entry.maxTimeoutSeconds,
+      ...(entry.extra ? { extra: entry.extra } : {})
+    }))
+  };
+}
+
+function encodePaymentRequiredHeader(challenge: PaymentChallenge): string {
+  const compact = buildCompactPaymentRequiredHeaderPayload(challenge);
+  return Buffer.from(JSON.stringify(compact), "utf8").toString("base64");
 }
 
 function paymentChallengeErrorForStage(stage: PaymentFailureStage): string {
