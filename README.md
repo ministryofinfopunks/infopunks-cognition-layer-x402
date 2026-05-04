@@ -42,15 +42,21 @@ Resource map:
 
 Fresh paid receipts are available from the public proof index:
 
+```text
 https://infopunks-cognition-layer-x402.onrender.com/proof
+```
 
 Recent paid events:
 
+```text
 https://infopunks-cognition-layer-x402.onrender.com/v1/events/recent
+```
 
 Receipt lookup template:
 
+```text
 https://infopunks-cognition-layer-x402.onrender.com/receipts/{receipt_id}
+```
 
 Receipt IDs are generated per paid call and may rotate after redeploy while v0 uses in-memory proof storage.
 
