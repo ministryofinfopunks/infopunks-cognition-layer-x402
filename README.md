@@ -55,9 +55,9 @@ https://infopunks-cognition-layer-x402.onrender.com/proof/{receipt_id}
 Fresh proof pages:
 
 ```text
-https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_c964f4f1-f9b5-43a0-ad4a-c81a069edb41
-https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_347e1ead-1ee0-4c7e-8eae-68025136d428
-https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_532d4af1-c1b4-48f8-84c4-174323f85116
+https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_263b4835-42ad-46a2-923b-a1369560cd2e
+https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_f9b215d4-b39a-4217-8660-72329493adc8
+https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_8a132191-7cc2-4fda-9f88-0215b5d76885
 ```
 
 ## Receipts
@@ -71,9 +71,9 @@ GET /receipts/{receipt_id}
 Fresh receipts:
 
 ```text
-https://infopunks-cognition-layer-x402.onrender.com/receipts/rcpt_c964f4f1-f9b5-43a0-ad4a-c81a069edb41
-https://infopunks-cognition-layer-x402.onrender.com/receipts/rcpt_347e1ead-1ee0-4c7e-8eae-68025136d428
-https://infopunks-cognition-layer-x402.onrender.com/receipts/rcpt_532d4af1-c1b4-48f8-84c4-174323f85116
+https://infopunks-cognition-layer-x402.onrender.com/receipts/rcpt_263b4835-42ad-46a2-923b-a1369560cd2e
+https://infopunks-cognition-layer-x402.onrender.com/receipts/rcpt_f9b215d4-b39a-4217-8660-72329493adc8
+https://infopunks-cognition-layer-x402.onrender.com/receipts/rcpt_8a132191-7cc2-4fda-9f88-0215b5d76885
 ```
 
 Receipts expose public metadata only: receipt id, paid endpoint, final status, x402 verification status, facilitator provider, network, asset, payTo, result hash, created timestamp, proof URL, and settlement reference when available.
@@ -223,8 +223,8 @@ Phase 2: Coherence + Signal is confirmed as a v0 mainnet proof.
 
 Fresh paid receipts:
 
-- `/v1/coherence-score`: `rcpt_c964f4f1-f9b5-43a0-ad4a-c81a069edb41`
-- `/v1/extract-signal`: `rcpt_347e1ead-1ee0-4c7e-8eae-68025136d428`
-- `/v1/simulate-narrative`: `rcpt_532d4af1-c1b4-48f8-84c4-174323f85116`
+- `/v1/coherence-score`: `rcpt_263b4835-42ad-46a2-923b-a1369560cd2e`
+- `/v1/extract-signal`: `rcpt_f9b215d4-b39a-4217-8660-72329493adc8`
+- `/v1/simulate-narrative`: `rcpt_8a132191-7cc2-4fda-9f88-0215b5d76885`
 
 All three calls returned `200`, were x402 verified through CDP, and include settled receipt references.
