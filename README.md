@@ -38,43 +38,21 @@ Resource map:
 - `/v1/extract-signal` turns raw narrative, market noise, and agent output into usable cultural signal.
 - `/v1/simulate-narrative` models how a narrative, protocol, launch, or market thesis may evolve.
 
-## Proof
+## Live Proof
 
-Proof index:
+Fresh paid receipts are available from the public proof index:
 
-```text
 https://infopunks-cognition-layer-x402.onrender.com/proof
-```
 
-Receipt proof pages:
+Recent paid events:
 
-```text
-https://infopunks-cognition-layer-x402.onrender.com/proof/{receipt_id}
-```
+https://infopunks-cognition-layer-x402.onrender.com/v1/events/recent
 
-Fresh proof pages:
+Receipt lookup template:
 
-```text
-https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_263b4835-42ad-46a2-923b-a1369560cd2e
-https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_f9b215d4-b39a-4217-8660-72329493adc8
-https://infopunks-cognition-layer-x402.onrender.com/proof/rcpt_8a132191-7cc2-4fda-9f88-0215b5d76885
-```
+https://infopunks-cognition-layer-x402.onrender.com/receipts/{receipt_id}
 
-## Receipts
-
-Public receipt endpoint:
-
-```text
-GET /receipts/{receipt_id}
-```
-
-Fresh receipts:
-
-```text
-https://infopunks-cognition-layer-x402.onrender.com/receipts/rcpt_263b4835-42ad-46a2-923b-a1369560cd2e
-https://infopunks-cognition-layer-x402.onrender.com/receipts/rcpt_f9b215d4-b39a-4217-8660-72329493adc8
-https://infopunks-cognition-layer-x402.onrender.com/receipts/rcpt_8a132191-7cc2-4fda-9f88-0215b5d76885
-```
+Receipt IDs are generated per paid call and may rotate after redeploy while v0 uses in-memory proof storage.
 
 Receipts expose public metadata only: receipt id, paid endpoint, final status, x402 verification status, facilitator provider, network, asset, payTo, result hash, created timestamp, proof URL, and settlement reference when available.
 
