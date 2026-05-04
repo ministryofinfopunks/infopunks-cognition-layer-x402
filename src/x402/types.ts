@@ -20,12 +20,40 @@ export interface PaymentVerificationFailure {
 }
 
 export interface PaymentChallenge {
-  x402Version: 1;
+  x402Version: 2;
+  resource: {
+    resource: string;
+    url: string;
+    routeTemplate: string;
+    description: string;
+    mimeType: "application/json";
+    inputSchema: Record<string, unknown>;
+    outputSchema: Record<string, unknown>;
+    tags: string[];
+    category: "intelligence";
+    extensions: {
+      bazaar: Record<string, unknown>;
+    };
+  };
   accepts: Array<{
     scheme: "exact";
     network: string;
-    maxAmountRequired: string;
-    resource: string;
+    chain: "Base";
+    amount: string;
+    resource: {
+      resource: string;
+      url: string;
+      routeTemplate: string;
+      description: string;
+      mimeType: "application/json";
+      inputSchema: Record<string, unknown>;
+      outputSchema: Record<string, unknown>;
+      tags: string[];
+      category: "intelligence";
+      extensions: {
+        bazaar: Record<string, unknown>;
+      };
+    };
     description: string;
     mimeType: "application/json";
     payTo: string;
@@ -36,6 +64,9 @@ export interface PaymentChallenge {
       version: string;
     };
   }>;
+  extensions: {
+    bazaar: Record<string, unknown>;
+  };
   error: string;
   message?: string;
   payment: {

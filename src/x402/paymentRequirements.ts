@@ -1,11 +1,13 @@
 import type { AppConfig } from "../config/env.js";
 import type { PaidToolRegistration } from "../registry/tools.js";
+import { buildCognitionResourceMetadata, type X402ResourceMetadata } from "./bazaar.js";
 
 export interface X402PaymentRequirement {
   scheme: "exact";
   network: string;
-  maxAmountRequired: string;
-  resource: string;
+  chain: "Base";
+  amount: string;
+  resource: X402ResourceMetadata;
   description: string;
   mimeType: "application/json";
   payTo: string;
@@ -19,18 +21,10 @@ export interface X402PaymentRequirement {
 
 const BASE_MAINNET_USDC = "0x833589fCD6eDb6E08f4c7c32D4f71b54bdA02913";
 
-function normalizeRequestPath(requestPath: string): string {
-  const pathWithoutQuery = requestPath.split("?")[0] ?? requestPath;
-  if (pathWithoutQuery.startsWith("/")) {
-    return pathWithoutQuery;
-  }
-  return `/${pathWithoutQuery}`;
-}
-
 export function toX402NetworkName(network: string): string {
   const normalized = String(network).trim().toLowerCase();
-  if (normalized === "eip155:8453" || normalized === "base") {
-    return "base";
+  if (normalized === "base") {
+    return "eip155:8453";
   }
   return normalized;
 }
@@ -42,16 +36,17 @@ export function buildX402PaymentRequirement(
 ): X402PaymentRequirement {
   const price = tool.getPrice(config);
   const x402Network = toX402NetworkName(config.x402Network);
-  const resource = `${config.publicBaseUrl}${normalizeRequestPath(requestPath)}`;
+  const resource = buildCognitionResourceMetadata(config, tool, requestPath);
   const isBaseUsdc =
-    x402Network === "base"
+    x402Network === "eip155:8453"
     && config.x402PaymentAssetAddress.toLowerCase() === BASE_MAINNET_USDC.toLowerCase();
   return {
     scheme: "exact",
     network: x402Network,
-    maxAmountRequired: price.priceAtomic,
+    chain: "Base",
+    amount: price.priceAtomic,
     resource,
-    description: tool.discovery_description,
+    description: resource.description,
     mimeType: "application/json",
     payTo: config.x402PayTo,
     maxTimeoutSeconds: 300,
