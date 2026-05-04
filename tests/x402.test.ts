@@ -23,6 +23,35 @@ function decodePaymentRequiredHeader(response: { headers: Record<string, string 
   return JSON.parse(Buffer.from(String(encoded), "base64").toString("utf8")) as Record<string, unknown>;
 }
 
+function assertCompactPaymentRequiredHeader(
+  decoded: any,
+  encodedHeader: string,
+  route: string
+): void {
+  assert.equal(decoded.x402Version, 2);
+  assert.equal(Array.isArray(decoded.accepts), true);
+  assert.equal(decoded.accepts.length > 0, true);
+  assert.equal(encodedHeader.length < 8192, true);
+  assert.equal(encodedHeader.length < 4096, true);
+
+  const requirement = decoded.accepts[0];
+  assert.equal(requirement.scheme, "exact");
+  assert.equal(requirement.network, "eip155:8453");
+  assert.equal(requirement.chain, "Base");
+  assert.equal(requirement.amount, "10000");
+  assert.equal(requirement.asset, BASE_USDC);
+  assert.equal(requirement.payTo, TEST_PAY_TO);
+  assert.equal(requirement.resource, `${TEST_BASE_URL}${route}`);
+  assert.equal(typeof requirement.maxTimeoutSeconds, "number");
+  assert.equal(requirement.maxTimeoutSeconds > 0, true);
+
+  assert.equal(Object.hasOwn(decoded, "extensions"), false);
+  assert.equal(Object.hasOwn(decoded, "resource"), false);
+  assert.equal(Object.hasOwn(decoded, "inputSchema"), false);
+  assert.equal(Object.hasOwn(decoded, "outputSchema"), false);
+  assert.equal(JSON.stringify(decoded).includes("\"bazaar\""), false);
+}
+
 function assertBazaarChallengeShape(challenge: any, route: string): void {
   assert.equal(challenge.x402Version, 2);
   assert.ok(Array.isArray(challenge.accepts));
@@ -163,9 +192,34 @@ test("unpaid 402 challenge includes x402 v2 + Bazaar metadata for all paid endpo
 
       const body = response.json();
       const decoded = decodePaymentRequiredHeader(response as any);
-      assert.deepEqual(decoded, body);
+      const encodedHeader = String(headers["payment-required"] ?? "");
+      assertCompactPaymentRequiredHeader(decoded, encodedHeader, route);
       assertBazaarChallengeShape(body, route);
     }
+  } finally {
+    await app.close();
+    await rm(runtimeDir, { recursive: true, force: true });
+  }
+});
+
+test("node fetch receives unpaid 402 without headers overflow", async () => {
+  const { app, runtimeDir } = await createTestServer();
+  let baseUrl: string | undefined;
+  try {
+    await app.listen({ host: "127.0.0.1", port: 0 });
+    const address = app.server.address();
+    assert.equal(address != null && typeof address === "object", true);
+    const port = Number((address as { port: number }).port);
+    baseUrl = `http://127.0.0.1:${String(port)}`;
+    const response = await fetch(`${baseUrl}/v1/coherence-score`, {
+      method: "POST"
+    });
+    assert.equal(response.status, 402);
+    const decoded = decodePaymentRequiredHeader({
+      headers: Object.fromEntries(response.headers.entries())
+    });
+    const encoded = response.headers.get("payment-required") ?? "";
+    assertCompactPaymentRequiredHeader(decoded, encoded, "/v1/coherence-score");
   } finally {
     await app.close();
     await rm(runtimeDir, { recursive: true, force: true });

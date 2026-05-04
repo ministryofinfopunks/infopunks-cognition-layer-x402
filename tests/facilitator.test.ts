@@ -71,6 +71,29 @@ function decodePaymentRequired(response: { headers: Record<string, string | unde
   return JSON.parse(Buffer.from(String(encoded), "base64").toString("utf8"));
 }
 
+function assertCompactPaymentRequiredHeader(decoded: any, route: string, encodedHeader: string): void {
+  assert.equal(decoded.x402Version, 2);
+  assert.equal(Array.isArray(decoded.accepts), true);
+  assert.equal(decoded.accepts.length > 0, true);
+  assert.equal(encodedHeader.length < 8192, true);
+  assert.equal(encodedHeader.length < 4096, true);
+
+  const requirement = decoded.accepts[0];
+  assert.equal(requirement.scheme, "exact");
+  assert.equal(requirement.network, "eip155:8453");
+  assert.equal(requirement.chain, "Base");
+  assert.equal(requirement.amount, "10000");
+  assert.equal(requirement.resource, `${TEST_BASE_URL}${route}`);
+  assert.equal(requirement.payTo, TEST_PAY_TO);
+  assert.equal(requirement.asset, BASE_USDC);
+  assert.equal(typeof requirement.maxTimeoutSeconds, "number");
+  assert.equal(requirement.maxTimeoutSeconds > 0, true);
+
+  assert.equal(Object.hasOwn(decoded, "resource"), false);
+  assert.equal(Object.hasOwn(decoded, "extensions"), false);
+  assert.equal(JSON.stringify(decoded).includes("\"bazaar\""), false);
+}
+
 function assertOfficialChallenge(
   response: { statusCode: number; json: () => any; headers: Record<string, string | undefined> },
   route: string,
@@ -78,8 +101,9 @@ function assertOfficialChallenge(
 ): any {
   assert.equal(response.statusCode, 402);
   const body = response.json();
+  const encodedHeader = String(response.headers["payment-required"] ?? "");
   const decoded = decodePaymentRequired(response);
-  assert.deepEqual(decoded, body);
+  assertCompactPaymentRequiredHeader(decoded, route, encodedHeader);
   assert.equal(body.x402Version, 2);
   assert.equal(body.error, expectedError);
   assert.ok(Array.isArray(body.accepts));
