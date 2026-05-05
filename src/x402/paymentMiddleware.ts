@@ -36,6 +36,253 @@ function compactPaymentDescription(routeTemplate: string, fallbackDescription: s
   }
 }
 
+interface CompactBazaarShape {
+  info: {
+    input: {
+      type: "http";
+      method: "POST";
+      bodyType: "json";
+      body: Record<string, unknown>;
+    };
+    output: {
+      type: "json";
+      example: Record<string, unknown>;
+    };
+  };
+  schema: {
+    type: "object";
+    required: string[];
+    properties: {
+      input: {
+        type: "object";
+        required: string[];
+        properties: {
+          type: { type: "string"; enum: string[] };
+          method: { type: "string"; enum: string[] };
+          bodyType: { type: "string"; enum: string[] };
+          body: {
+            type: "object";
+            required: string[];
+            properties: Record<string, unknown>;
+            additionalProperties: false;
+          };
+        };
+        additionalProperties: false;
+      };
+      output: {
+        type: "object";
+        required: string[];
+        properties: {
+          type: { type: "string"; enum: string[] };
+          example: {
+            type: "object";
+            required: string[];
+            properties: Record<string, unknown>;
+            additionalProperties: false;
+          };
+        };
+        additionalProperties: false;
+      };
+    };
+    additionalProperties: false;
+  };
+}
+
+function buildCompactBazaarExtension(routeTemplate: string): CompactBazaarShape {
+  switch (routeTemplate) {
+    case "/v1/coherence-score":
+      return {
+        info: {
+          input: {
+            type: "http",
+            method: "POST",
+            bodyType: "json",
+            body: {
+              artifact: "Agents pay for cognition before execution."
+            }
+          },
+          output: {
+            type: "json",
+            example: {
+              coherence_score: 88,
+              decision: "publishable"
+            }
+          }
+        },
+        schema: {
+          type: "object",
+          required: ["input", "output"],
+          properties: {
+            input: {
+              type: "object",
+              required: ["type", "method", "bodyType", "body"],
+              properties: {
+                type: { type: "string", enum: ["http"] },
+                method: { type: "string", enum: ["POST"] },
+                bodyType: { type: "string", enum: ["json"] },
+                body: {
+                  type: "object",
+                  required: ["artifact"],
+                  properties: {
+                    artifact: { type: "string" }
+                  },
+                  additionalProperties: false
+                }
+              },
+              additionalProperties: false
+            },
+            output: {
+              type: "object",
+              required: ["type", "example"],
+              properties: {
+                type: { type: "string", enum: ["json"] },
+                example: {
+                  type: "object",
+                  required: ["coherence_score", "decision"],
+                  properties: {
+                    coherence_score: { type: "number" },
+                    decision: { type: "string" }
+                  },
+                  additionalProperties: false
+                }
+              },
+              additionalProperties: false
+            }
+          },
+          additionalProperties: false
+        }
+      };
+    case "/v1/extract-signal":
+      return {
+        info: {
+          input: {
+            type: "http",
+            method: "POST",
+            bodyType: "json",
+            body: {
+              input: "Agent payments need receipts.",
+              output_type: "briefing"
+            }
+          },
+          output: {
+            type: "json",
+            example: {
+              core_signal: "receipt-backed paid cognition",
+              coherence_score: 82
+            }
+          }
+        },
+        schema: {
+          type: "object",
+          required: ["input", "output"],
+          properties: {
+            input: {
+              type: "object",
+              required: ["type", "method", "bodyType", "body"],
+              properties: {
+                type: { type: "string", enum: ["http"] },
+                method: { type: "string", enum: ["POST"] },
+                bodyType: { type: "string", enum: ["json"] },
+                body: {
+                  type: "object",
+                  required: ["input", "output_type"],
+                  properties: {
+                    input: { type: "string" },
+                    output_type: { type: "string" }
+                  },
+                  additionalProperties: false
+                }
+              },
+              additionalProperties: false
+            },
+            output: {
+              type: "object",
+              required: ["type", "example"],
+              properties: {
+                type: { type: "string", enum: ["json"] },
+                example: {
+                  type: "object",
+                  required: ["core_signal", "coherence_score"],
+                  properties: {
+                    core_signal: { type: "string" },
+                    coherence_score: { type: "number" }
+                  },
+                  additionalProperties: false
+                }
+              },
+              additionalProperties: false
+            }
+          },
+          additionalProperties: false
+        }
+      };
+    default:
+      return {
+        info: {
+          input: {
+            type: "http",
+            method: "POST",
+            bodyType: "json",
+            body: {
+              narrative: "Paid cognition becomes agent routing infrastructure.",
+              time_horizon: "30d"
+            }
+          },
+          output: {
+            type: "json",
+            example: {
+              highest_probability_path: "Infrastructure Pull",
+              recommended_action: "Ship the endpoint and show a paid receipt."
+            }
+          }
+        },
+        schema: {
+          type: "object",
+          required: ["input", "output"],
+          properties: {
+            input: {
+              type: "object",
+              required: ["type", "method", "bodyType", "body"],
+              properties: {
+                type: { type: "string", enum: ["http"] },
+                method: { type: "string", enum: ["POST"] },
+                bodyType: { type: "string", enum: ["json"] },
+                body: {
+                  type: "object",
+                  required: ["narrative", "time_horizon"],
+                  properties: {
+                    narrative: { type: "string" },
+                    time_horizon: { type: "string" }
+                  },
+                  additionalProperties: false
+                }
+              },
+              additionalProperties: false
+            },
+            output: {
+              type: "object",
+              required: ["type", "example"],
+              properties: {
+                type: { type: "string", enum: ["json"] },
+                example: {
+                  type: "object",
+                  required: ["highest_probability_path", "recommended_action"],
+                  properties: {
+                    highest_probability_path: { type: "string" },
+                    recommended_action: { type: "string" }
+                  },
+                  additionalProperties: false
+                }
+              },
+              additionalProperties: false
+            }
+          },
+          additionalProperties: false
+        }
+      };
+  }
+}
+
 function applyUnpaidX402Headers(config: AppConfig, reply: { header: (name: string, value: string) => void }): void {
   reply.header("www-authenticate", `x402 realm="${config.serviceName}", units="1", rail="x402"`);
   reply.header("x402-payment-required", "true");
@@ -48,14 +295,34 @@ function applyUnpaidX402Headers(config: AppConfig, reply: { header: (name: strin
 }
 
 function buildCompactPaymentRequiredHeaderPayload(challenge: PaymentChallenge): Record<string, unknown> {
+  const firstRequirement = challenge.accepts[0];
+  const routeTemplate = firstRequirement?.resource.routeTemplate ?? challenge.resource.routeTemplate;
+  const description = compactPaymentDescription(
+    routeTemplate,
+    firstRequirement?.description ?? challenge.resource.description
+  );
+  const bazaar = buildCompactBazaarExtension(routeTemplate);
+  const resourceUrl = firstRequirement?.resource.url ?? challenge.resource.url;
+
   return {
     x402Version: challenge.x402Version,
+    resource: {
+      url: resourceUrl,
+      resource: resourceUrl,
+      routeTemplate,
+      description,
+      mimeType: "application/json"
+    },
+    extensions: {
+      bazaar
+    },
     accepts: challenge.accepts.map((entry) => ({
       scheme: entry.scheme,
       network: entry.network,
+      amount: entry.amount,
       maxAmountRequired: entry.amount,
       resource: entry.resource.url,
-      description: compactPaymentDescription(entry.resource.routeTemplate, entry.description),
+      description,
       mimeType: entry.mimeType,
       asset: entry.asset,
       payTo: entry.payTo,
