@@ -59,9 +59,8 @@ function normalizePaymentRequiredForEvm(paymentRequiredResponse) {
       typeof entry?.resource === "string"
         ? entry.resource
         : (entry?.resource && typeof entry.resource.url === "string" ? entry.resource.url : undefined);
-    const maxAmountRequiredSource = entry?.maxAmountRequired ?? entry?.amount;
-    const maxAmountRequired =
-      maxAmountRequiredSource == null ? undefined : String(maxAmountRequiredSource);
+    const valueSource = entry?.maxAmountRequired ?? entry?.amount;
+    const value = valueSource == null ? undefined : String(valueSource);
     const parsedTimeout = Number(entry?.maxTimeoutSeconds);
     const maxTimeoutSeconds =
       Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : 300;
@@ -74,14 +73,14 @@ function normalizePaymentRequiredForEvm(paymentRequiredResponse) {
       ...entry,
       network,
       ...(resource != null ? { resource } : {}),
-      ...(maxAmountRequired != null ? { maxAmountRequired } : {}),
+      ...(value != null ? { maxAmountRequired: value, amount: value } : {}),
       maxTimeoutSeconds,
       ...(entry?.chainId != null ? { chainId: entry.chainId } : {}),
       ...(derivedChainId != null && Number.isFinite(derivedChainId) ? { chainId: derivedChainId } : {})
     };
 
     console.log(
-      `[pay-cognition] normalized_accepts chainId=${String(normalizedEntry.chainId ?? "")} network=${String(normalizedEntry.network ?? "")} maxAmountRequired=${String(normalizedEntry.maxAmountRequired ?? "")} asset_present=${String(Boolean(normalizedEntry.asset))} payTo_present=${String(Boolean(normalizedEntry.payTo))}`
+      `[pay-cognition] normalized_accepts amount=${String(normalizedEntry.amount ?? "")} maxAmountRequired=${String(normalizedEntry.maxAmountRequired ?? "")} chainId=${String(normalizedEntry.chainId ?? "")} network=${String(normalizedEntry.network ?? "")} asset_present=${String(Boolean(normalizedEntry.asset))} payTo_present=${String(Boolean(normalizedEntry.payTo))}`
     );
     return normalizedEntry;
   });
