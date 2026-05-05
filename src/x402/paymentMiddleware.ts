@@ -23,6 +23,19 @@ function sanitizeSummary(value: string): string {
   return value.replace(/\s+/g, " ").trim().slice(0, 280);
 }
 
+function compactPaymentDescription(routeTemplate: string, fallbackDescription: string): string {
+  switch (routeTemplate) {
+    case "/v1/coherence-score":
+      return "Coherence scoring endpoint.";
+    case "/v1/extract-signal":
+      return "Signal extraction endpoint.";
+    case "/v1/simulate-narrative":
+      return "Narrative simulation endpoint.";
+    default:
+      return fallbackDescription.replace(/\s+/g, " ").trim().slice(0, 72);
+  }
+}
+
 function applyUnpaidX402Headers(config: AppConfig, reply: { header: (name: string, value: string) => void }): void {
   reply.header("www-authenticate", `x402 realm="${config.serviceName}", units="1", rail="x402"`);
   reply.header("x402-payment-required", "true");
@@ -40,14 +53,16 @@ function buildCompactPaymentRequiredHeaderPayload(challenge: PaymentChallenge): 
     accepts: challenge.accepts.map((entry) => ({
       scheme: entry.scheme,
       network: entry.network,
-      chain: entry.chain,
-      amount: entry.amount,
+      maxAmountRequired: entry.amount,
+      resource: entry.resource.url,
+      description: compactPaymentDescription(entry.resource.routeTemplate, entry.description),
+      mimeType: entry.mimeType,
       asset: entry.asset,
       payTo: entry.payTo,
-      resource: entry.resource.url,
       maxTimeoutSeconds: entry.maxTimeoutSeconds,
       ...(entry.extra ? { extra: entry.extra } : {})
-    }))
+    })),
+    error: challenge.error
   };
 }
 
