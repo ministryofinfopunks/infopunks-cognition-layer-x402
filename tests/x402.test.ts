@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, rm } from "node:fs/promises";
+import { x402HTTPClient, x402Client } from "@x402/core/client";
 import { loadEnv } from "../src/config/env.js";
 import { buildServer } from "../src/server.js";
 import { getToolById, getToolByRoute, listTools } from "../src/registry/tools.js";
@@ -37,19 +38,36 @@ function assertCompactPaymentRequiredHeader(
   const requirement = decoded.accepts[0];
   assert.equal(requirement.scheme, "exact");
   assert.equal(requirement.network, "eip155:8453");
-  assert.equal(requirement.chain, "Base");
-  assert.equal(requirement.amount, "10000");
+  assert.equal(requirement.maxAmountRequired, "10000");
+  assert.equal(requirement.resource, `${TEST_BASE_URL}${route}`);
+  assert.equal(typeof requirement.description, "string");
+  assert.equal(requirement.description.length > 0, true);
+  assert.equal(requirement.description.length <= 220, true);
+  assert.equal(requirement.mimeType, "application/json");
   assert.equal(requirement.asset, BASE_USDC);
   assert.equal(requirement.payTo, TEST_PAY_TO);
-  assert.equal(requirement.resource, `${TEST_BASE_URL}${route}`);
   assert.equal(typeof requirement.maxTimeoutSeconds, "number");
   assert.equal(requirement.maxTimeoutSeconds > 0, true);
+  assert.equal(requirement.extra?.name, "USD Coin");
+  assert.equal(requirement.extra?.version, "2");
+  assert.equal(decoded.error, "X-PAYMENT header is required");
 
   assert.equal(Object.hasOwn(decoded, "extensions"), false);
   assert.equal(Object.hasOwn(decoded, "resource"), false);
   assert.equal(Object.hasOwn(decoded, "inputSchema"), false);
   assert.equal(Object.hasOwn(decoded, "outputSchema"), false);
+  assert.equal(JSON.stringify(decoded).includes("\"extensions\""), false);
   assert.equal(JSON.stringify(decoded).includes("\"bazaar\""), false);
+  assert.equal(JSON.stringify(decoded).includes("\"inputSchema\""), false);
+  assert.equal(JSON.stringify(decoded).includes("\"outputSchema\""), false);
+}
+
+function assertBuyerStylePaymentRequiredParsing(responseHeaders: Record<string, string | undefined>): void {
+  const client = new x402HTTPClient(new x402Client());
+  const parsed = client.getPaymentRequiredResponse((name) => responseHeaders[name.toLowerCase()] ?? null);
+  assert.equal(parsed.x402Version, 2);
+  assert.ok(Array.isArray(parsed.accepts));
+  assert.equal(parsed.accepts.length > 0, true);
 }
 
 function assertBazaarChallengeShape(challenge: any, route: string): void {
@@ -194,6 +212,7 @@ test("unpaid 402 challenge includes x402 v2 + Bazaar metadata for all paid endpo
       const decoded = decodePaymentRequiredHeader(response as any);
       const encodedHeader = String(headers["payment-required"] ?? "");
       assertCompactPaymentRequiredHeader(decoded, encodedHeader, route);
+      assertBuyerStylePaymentRequiredParsing(headers);
       assertBazaarChallengeShape(body, route);
     }
   } finally {
@@ -220,6 +239,7 @@ test("node fetch receives unpaid 402 without headers overflow", async () => {
     });
     const encoded = response.headers.get("payment-required") ?? "";
     assertCompactPaymentRequiredHeader(decoded, encoded, "/v1/coherence-score");
+    assertBuyerStylePaymentRequiredParsing(Object.fromEntries(response.headers.entries()));
   } finally {
     await app.close();
     await rm(runtimeDir, { recursive: true, force: true });
