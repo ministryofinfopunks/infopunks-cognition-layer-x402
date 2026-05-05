@@ -50,6 +50,71 @@ function decodePaymentRequiredHeader(rawHeader) {
   return JSON.parse(decodedText);
 }
 
+function normalizePaymentRequiredForEvm(paymentRequiredResponse) {
+  const accepts = Array.isArray(paymentRequiredResponse?.accepts) ? paymentRequiredResponse.accepts : [];
+
+  const normalizedAccepts = accepts.map((entry) => {
+    const network = typeof entry?.network === "string" ? entry.network : String(entry?.network ?? "");
+    const resource =
+      typeof entry?.resource === "string"
+        ? entry.resource
+        : (entry?.resource && typeof entry.resource.url === "string" ? entry.resource.url : undefined);
+    const maxAmountRequiredSource = entry?.maxAmountRequired ?? entry?.amount;
+    const maxAmountRequired =
+      maxAmountRequiredSource == null ? undefined : String(maxAmountRequiredSource);
+    const parsedTimeout = Number(entry?.maxTimeoutSeconds);
+    const maxTimeoutSeconds =
+      Number.isFinite(parsedTimeout) && parsedTimeout > 0 ? parsedTimeout : 300;
+    const derivedChainId =
+      entry?.chainId == null && network.startsWith("eip155:")
+        ? Number(network.slice("eip155:".length))
+        : undefined;
+
+    const normalizedEntry = {
+      ...entry,
+      network,
+      ...(resource != null ? { resource } : {}),
+      ...(maxAmountRequired != null ? { maxAmountRequired } : {}),
+      maxTimeoutSeconds,
+      ...(entry?.chainId != null ? { chainId: entry.chainId } : {}),
+      ...(derivedChainId != null && Number.isFinite(derivedChainId) ? { chainId: derivedChainId } : {})
+    };
+
+    console.log(
+      `[pay-cognition] normalized_accepts chainId=${String(normalizedEntry.chainId ?? "")} network=${String(normalizedEntry.network ?? "")} maxAmountRequired=${String(normalizedEntry.maxAmountRequired ?? "")} asset_present=${String(Boolean(normalizedEntry.asset))} payTo_present=${String(Boolean(normalizedEntry.payTo))}`
+    );
+    return normalizedEntry;
+  });
+
+  return {
+    ...paymentRequiredResponse,
+    accepts: normalizedAccepts
+  };
+}
+
+function requiredAcceptFieldsMissing(entry) {
+  const requiredFields = [
+    "scheme",
+    "network",
+    "maxAmountRequired",
+    "maxTimeoutSeconds",
+    "asset",
+    "payTo",
+    "resource"
+  ];
+
+  return requiredFields.filter((field) => {
+    const value = entry?.[field];
+    if (value == null) {
+      return true;
+    }
+    if (typeof value === "string" && value.trim().length === 0) {
+      return true;
+    }
+    return false;
+  });
+}
+
 async function maybeBuildSdkPaymentHeaders(paymentRequiredResponse) {
   const privateKey = process.env.EVM_PRIVATE_KEY;
   if (!privateKey) {
@@ -72,8 +137,19 @@ async function maybeBuildSdkPaymentHeaders(paymentRequiredResponse) {
       throw new Error("Unsupported @x402/evm client module exports.");
     }
 
-    const paymentPayload = await paymentClient.createPaymentPayload(paymentRequiredResponse);
-    return paymentHttpClient.encodePaymentSignatureHeader(paymentPayload);
+    try {
+      const paymentPayload = await paymentClient.createPaymentPayload(paymentRequiredResponse);
+      return paymentHttpClient.encodePaymentSignatureHeader(paymentPayload);
+    } catch (error) {
+      const accepts0 = paymentRequiredResponse?.accepts?.[0] ?? {};
+      const keys = Object.keys(accepts0);
+      const missing = requiredAcceptFieldsMissing(accepts0);
+      const reason = error instanceof Error ? error.message : String(error);
+      console.error(`[pay-cognition] createPaymentPayload_failed message=${reason}`);
+      console.error(`[pay-cognition] createPaymentPayload_accepts0_keys=${keys.join(",")}`);
+      console.error(`[pay-cognition] createPaymentPayload_missing_fields=${missing.join(",")}`);
+      throw error;
+    }
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     throw new Error(`Unable to build SDK payment payload: ${reason}`);
@@ -141,10 +217,11 @@ async function main() {
   console.log(`[pay-cognition] accepts[0].network=${String(accepts0.network ?? "")}`);
   console.log(`[pay-cognition] accepts[0].maxAmountRequired=${String(accepts0.maxAmountRequired ?? "")}`);
   console.log(`[pay-cognition] accepts[0].resource=${String(accepts0.resource ?? "")}`);
+  const normalizedPaymentRequiredResponse = normalizePaymentRequiredForEvm(paymentRequiredResponse);
 
   let paymentHeaders = parseFallbackPaymentHeaderFromEnv();
   if (!paymentHeaders) {
-    paymentHeaders = await maybeBuildSdkPaymentHeaders(paymentRequiredResponse);
+    paymentHeaders = await maybeBuildSdkPaymentHeaders(normalizedPaymentRequiredResponse);
   }
 
   if (!paymentHeaders) {
