@@ -87,6 +87,7 @@ function assertCompactPaymentRequiredHeader(
   const requirement = decoded.accepts[0];
   assert.equal(requirement.scheme, "exact");
   assert.equal(requirement.network, "eip155:8453");
+  assert.equal(requirement.amount, "10000");
   assert.equal(requirement.maxAmountRequired, "10000");
   assert.equal(requirement.resource, `${TEST_BASE_URL}${route}`);
   assert.equal(typeof requirement.description, "string");
@@ -100,10 +101,15 @@ function assertCompactPaymentRequiredHeader(
   assert.equal(requirement.extra?.name, "USD Coin");
   assert.equal(requirement.extra?.version, "2");
   assert.equal(decoded.error, expectedError);
-
-  assert.equal(Object.hasOwn(decoded, "resource"), false);
-  assert.equal(Object.hasOwn(decoded, "extensions"), false);
-  assert.equal(JSON.stringify(decoded).includes("\"bazaar\""), false);
+  assert.equal(decoded.resource.url, `${TEST_BASE_URL}${route}`);
+  assert.equal(decoded.resource.resource, `${TEST_BASE_URL}${route}`);
+  assert.equal(decoded.resource.routeTemplate, route);
+  assert.equal(decoded.resource.mimeType, "application/json");
+  assert.ok(decoded.extensions?.bazaar);
+  assert.ok(decoded.extensions?.bazaar?.info?.input);
+  assert.ok(decoded.extensions?.bazaar?.info?.output?.example);
+  assert.ok(decoded.extensions?.bazaar?.schema?.properties?.input);
+  assert.ok(decoded.extensions?.bazaar?.schema?.properties?.output);
   assert.equal(JSON.stringify(decoded).includes("\"inputSchema\""), false);
   assert.equal(JSON.stringify(decoded).includes("\"outputSchema\""), false);
 }
